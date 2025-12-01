@@ -1,0 +1,1725 @@
+openapi: 3.0.3
+info:
+  title: ChangaNet Advanced Availability & Scheduling API
+  description: |
+    Comprehensive API for managing professional availability, appointments, and scheduling
+    with advanced features like recurrence, conflict detection, timezone handling, and calendar integration.
+  version: 2.0.0
+  contact:
+    name: ChangaNet Development Team
+    email: support@changanet.com
+
+servers:
+  - url: http://localhost:3003/api
+    description: Development server
+  - url: https://api.changanet.com/api
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Common schemas
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          description: Additional error details
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        total:
+          type: integer
+        totalPages:
+          type: integer
+
+    TimeRange:
+      type: object
+      properties:
+        start:
+          type: string
+          format: date-time
+          description: Start datetime in ISO 8601 format
+        end:
+          type: string
+          format: date-time
+          description: End datetime in ISO 8601 format
+        timezone:
+          type: string
+          description: IANA timezone identifier
+          default: "America/Buenos_Aires"
+
+    # Availability schemas
+    AvailabilityConfig:
+      type: object
+      required:
+        - professional_id
+        - start_date
+        - start_time
+        - end_time
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        professional_id:
+          type: string
+          format: uuid
+          description: Professional user ID
+        title:
+          type: string
+          maxLength: 100
+          description: Descriptive title for the availability configuration
+        description:
+          type: string
+          maxLength: 500
+          description: Detailed description
+        is_active:
+          type: boolean
+          default: true
+          description: Whether this configuration is active
+        recurrence_type:
+          type: string
+          enum: [none, daily, weekly, monthly, custom]
+          default: none
+          description: Type of recurrence pattern
+        recurrence_config:
+          type: string
+          description: JSON string with recurrence configuration
+        start_date:
+          type: string
+          format: date
+          description: Start date for the availability configuration
+        end_date:
+          type: string
+          format: date
+          description: End date (null for indefinite)
+        start_time:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: Start time in HH:MM format (local timezone)
+        end_time:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: End time in HH:MM format (local timezone)
+        duration_minutes:
+          type: integer
+          minimum: 15
+          maximum: 480
+          default: 60
+          description: Duration of each slot in minutes
+        timezone:
+          type: string
+          default: "America/Buenos_Aires"
+          description: IANA timezone identifier
+        dst_handling:
+          type: string
+          enum: [auto, manual, ignore]
+          default: auto
+          description: How to handle DST transitions
+        meta:
+          type: string
+          description: JSON string with additional metadata and business rules
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+
+    AvailabilitySlot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        professional_id:
+          type: string
+          format: uuid
+        availability_config_id:
+          type: string
+          format: uuid
+        start_time:
+          type: string
+          format: date-time
+          description: Start time in UTC
+        end_time:
+          type: string
+          format: date-time
+          description: End time in UTC
+        local_start_time:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: Start time in local timezone
+        local_end_time:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: End time in local timezone
+        timezone:
+          type: string
+        status:
+          type: string
+          enum: [available, booked, blocked, cancelled]
+          default: available
+        is_available:
+          type: boolean
+          default: true
+        booked_by:
+          type: string
+          format: uuid
+        booked_at:
+          type: string
+          format: date-time
+        meta:
+          type: string
+          description: JSON string with slot-specific metadata
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    # Appointment schemas
+    Appointment:
+      type: object
+      required:
+        - professional_id
+        - client_id
+        - title
+        - scheduled_start
+        - scheduled_end
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        professional_id:
+          type: string
+          format: uuid
+        client_id:
+          type: string
+          format: uuid
+        slot_id:
+          type: string
+          format: uuid
+        availability_config_id:
+          type: string
+          format: uuid
+        service_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+        appointment_type:
+          type: string
+          enum: [service, consultation, meeting]
+          default: service
+        status:
+          type: string
+          enum: [scheduled, confirmed, in_progress, completed, cancelled, no_show]
+          default: scheduled
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+          default: normal
+        scheduled_start:
+          type: string
+          format: date-time
+          description: Scheduled start time in UTC
+        scheduled_end:
+          type: string
+          format: date-time
+          description: Scheduled end time in UTC
+        actual_start:
+          type: string
+          format: date-time
+        actual_end:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          default: "America/Buenos_Aires"
+        notes:
+          type: string
+          maxLength: 1000
+          description: Internal notes by professional
+        client_notes:
+          type: string
+          maxLength: 500
+          description: Notes by client
+        price:
+          type: number
+          format: float
+          minimum: 0
+        currency:
+          type: string
+          default: "ARS"
+        reminder_sent:
+          type: boolean
+          default: false
+        reminder_time:
+          type: string
+          format: date-time
+        google_event_id:
+          type: string
+          maxLength: 200
+        ical_uid:
+          type: string
+          maxLength: 200
+        meta:
+          type: string
+          description: JSON string with additional metadata
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+        cancelled_at:
+          type: string
+          format: date-time
+        cancelled_by:
+          type: string
+          format: uuid
+        cancel_reason:
+          type: string
+          maxLength: 500
+
+    # Blocked slots schema
+    BlockedSlot:
+      type: object
+      required:
+        - professional_id
+        - title
+        - reason
+        - start_time
+        - end_time
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        professional_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 100
+        reason:
+          type: string
+          enum: [vacation, sick, personal, maintenance, other]
+        description:
+          type: string
+          maxLength: 500
+        start_time:
+          type: string
+          format: date-time
+          description: Start time in UTC
+        end_time:
+          type: string
+          format: date-time
+          description: End time in UTC
+        is_recurring:
+          type: boolean
+          default: false
+        recurrence_rule:
+          type: string
+          description: RRULE string for recurring blocks
+        timezone:
+          type: string
+          default: "America/Buenos_Aires"
+        is_active:
+          type: boolean
+          default: true
+        created_by:
+          type: string
+          format: uuid
+        meta:
+          type: string
+          description: JSON string with additional metadata
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    # Request/Response schemas
+    AvailabilityQuery:
+      type: object
+      properties:
+        professionalId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+          description: Specific date to query (YYYY-MM-DD)
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [available, booked, blocked, cancelled]
+        includeBooked:
+          type: boolean
+          default: false
+        timezone:
+          type: string
+          description: Client's timezone for proper conversion
+
+    ConflictCheck:
+      type: object
+      properties:
+        entity:
+          type: object
+          description: The entity to check for conflicts
+        entityType:
+          type: string
+          enum: [slot, appointment, block]
+        options:
+          type: object
+          description: Additional conflict detection options
+
+    ConflictResult:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        conflicts:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              severity:
+                type: string
+                enum: [low, medium, high, critical]
+              message:
+                type: string
+              details:
+                type: object
+        canProceed:
+          type: boolean
+
+    BookingRequest:
+      type: object
+      required:
+        - slotId
+      properties:
+        slotId:
+          type: string
+          format: uuid
+        appointmentData:
+          type: object
+          properties:
+            title:
+              type: string
+            description:
+              type: string
+            appointmentType:
+              type: string
+              enum: [service, consultation, meeting]
+            price:
+              type: number
+              format: float
+            currency:
+              type: string
+            notes:
+              type: string
+            meta:
+              type: object
+
+    BookingResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        appointment:
+          $ref: '#/components/schemas/Appointment'
+        slot:
+          $ref: '#/components/schemas/AvailabilitySlot'
+        conflicts:
+          type: array
+          items:
+            type: object
+
+paths:
+  # Availability Configuration Management
+  /availability/configs:
+    post:
+      summary: Create availability configuration
+      description: Create a new availability configuration with recurrence patterns
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvailabilityConfig'
+      responses:
+        '201':
+          description: Configuration created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityConfig'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - not a professional
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List availability configurations
+      description: Get all availability configurations for the current professional
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: activeOnly
+          in: query
+          schema:
+            type: boolean
+            default: true
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: List of configurations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AvailabilityConfig'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /availability/configs/{configId}:
+    get:
+      summary: Get availability configuration
+      description: Get a specific availability configuration by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: configId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Configuration details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityConfig'
+        '404':
+          description: Configuration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update availability configuration
+      description: Update an existing availability configuration
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: configId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvailabilityConfig'
+      responses:
+        '200':
+          description: Configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityConfig'
+        '404':
+          description: Configuration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete availability configuration
+      description: Delete an availability configuration and its generated slots
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: configId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Configuration deleted successfully
+        '404':
+          description: Configuration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /availability/configs/{configId}/generate:
+    post:
+      summary: Generate slots from configuration
+      description: Generate availability slots based on the configuration's recurrence pattern
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: configId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - startDate
+                - endDate
+              properties:
+                startDate:
+                  type: string
+                  format: date
+                endDate:
+                  type: string
+                  format: date
+                forceRegenerate:
+                  type: boolean
+                  default: false
+                  description: Whether to regenerate existing slots
+      responses:
+        '200':
+          description: Slots generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generated:
+                    type: integer
+                    description: Number of slots generated
+                  updated:
+                    type: integer
+                    description: Number of slots updated
+                  slots:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AvailabilitySlot'
+        '400':
+          description: Invalid date range or configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Availability Slots Management
+  /availability/slots:
+    get:
+      summary: Query availability slots
+      description: Query availability slots with advanced filtering
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: professionalId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [available, booked, blocked, cancelled]
+        - name: includeBooked
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: timezone
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: List of availability slots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slots:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AvailabilitySlot'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /availability/slots/{slotId}:
+    get:
+      summary: Get slot details
+      description: Get detailed information about a specific availability slot
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: slotId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Slot details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilitySlot'
+        '404':
+          description: Slot not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update slot
+      description: Update slot status or metadata
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: slotId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [available, booked, blocked, cancelled]
+                meta:
+                  type: object
+      responses:
+        '200':
+          description: Slot updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilitySlot'
+        '404':
+          description: Slot not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /availability/slots/{slotId}/book:
+    post:
+      summary: Book availability slot
+      description: Book an available slot and create an appointment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: slotId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+      responses:
+        '201':
+          description: Slot booked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+        '400':
+          description: Slot not available or invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Booking conflict detected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  conflicts:
+                    type: array
+                    items:
+                      type: object
+
+  # Appointment Management
+  /appointments:
+    post:
+      summary: Create appointment
+      description: Create a new appointment (alternative to booking a slot)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+      responses:
+        '201':
+          description: Appointment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '400':
+          description: Invalid appointment data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List appointments
+      description: Get appointments with advanced filtering
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: professionalId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: clientId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [scheduled, confirmed, in_progress, completed, cancelled, no_show]
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: List of appointments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  appointments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Appointment'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /appointments/{appointmentId}:
+    get:
+      summary: Get appointment details
+      description: Get detailed information about a specific appointment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Appointment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '404':
+          description: Appointment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update appointment
+      description: Update appointment details or status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+      responses:
+        '200':
+          description: Appointment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '404':
+          description: Appointment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Cancel appointment
+      description: Cancel an appointment with reason
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: Appointment cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '404':
+          description: Appointment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Blocked Slots Management
+  /blocked-slots:
+    post:
+      summary: Create blocked time period
+      description: Block a time period to prevent scheduling
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockedSlot'
+      responses:
+        '201':
+          description: Blocked period created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockedSlot'
+        '400':
+          description: Invalid blocked period data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List blocked periods
+      description: Get blocked time periods for a professional
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: professionalId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: activeOnly
+          in: query
+          schema:
+            type: boolean
+            default: true
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: List of blocked periods
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  blockedSlots:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BlockedSlot'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /blocked-slots/{blockId}:
+    put:
+      summary: Update blocked period
+      description: Update a blocked time period
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: blockId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockedSlot'
+      responses:
+        '200':
+          description: Blocked period updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockedSlot'
+        '404':
+          description: Blocked period not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete blocked period
+      description: Remove a blocked time period
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: blockId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Blocked period deleted successfully
+        '404':
+          description: Blocked period not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Conflict Detection
+  /conflicts/check:
+    post:
+      summary: Check for conflicts
+      description: Validate an entity for scheduling conflicts
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConflictCheck'
+      responses:
+        '200':
+          description: Conflict check results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResult'
+        '400':
+          description: Invalid conflict check request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Calendar Integration
+  /calendar/google/sync:
+    post:
+      summary: Sync with Google Calendar
+      description: Synchronize appointments with Google Calendar
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                calendarId:
+                  type: string
+                  description: Google Calendar ID to sync with
+                syncDirection:
+                  type: string
+                  enum: [import, export, bidirectional]
+                  default: bidirectional
+                dateRange:
+                  $ref: '#/components/schemas/TimeRange'
+      responses:
+        '200':
+          description: Sync completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  synced:
+                    type: integer
+                    description: Number of items synced
+                  created:
+                    type: integer
+                  updated:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: Sync configuration error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /calendar/ical/export:
+    get:
+      summary: Export iCal calendar
+      description: Export professional's schedule as iCal format
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: professionalId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: includeBlocked
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: iCal calendar data
+          content:
+            text/calendar:
+              schema:
+                type: string
+                description: iCal formatted calendar data
+        '400':
+          description: Invalid export parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Timezone Utilities
+  /timezone/convert:
+    post:
+      summary: Convert timezone
+      description: Convert datetime between timezones
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dateTime
+                - fromTimezone
+                - toTimezone
+              properties:
+                dateTime:
+                  type: string
+                  format: date-time
+                fromTimezone:
+                  type: string
+                toTimezone:
+                  type: string
+      responses:
+        '200':
+          description: Timezone conversion result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  original:
+                    type: string
+                    format: date-time
+                  converted:
+                    type: string
+                    format: date-time
+                  fromTimezone:
+                    type: string
+                  toTimezone:
+                    type: string
+                  offset:
+                    type: integer
+                  isDST:
+                    type: boolean
+
+  /timezone/list:
+    get:
+      summary: List available timezones
+      description: Get list of supported timezone identifiers
+      responses:
+        '200':
+          description: List of timezones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timezones:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        identifier:
+                          type: string
+                        name:
+                          type: string
+                        abbreviation:
+                          type: string
+                        offset:
+                          type: integer
+                        isDST:
+                          type: boolean
+
+  # Statistics and Analytics
+  /availability/stats:
+    get:
+      summary: Get availability statistics
+      description: Get statistics about availability and scheduling
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: professionalId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Availability statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSlots:
+                    type: integer
+                  bookedSlots:
+                    type: integer
+                  availableSlots:
+                    type: integer
+                  blockedSlots:
+                    type: integer
+                  utilizationRate:
+                    type: number
+                    format: float
+                  period:
+                    $ref: '#/components/schemas/TimeRange'
+
+ # Calendar Synchronization API
+ /sync/calendar/google/auth-url:
+   get:
+     summary: Get Google OAuth URL
+     description: Get the authorization URL for Google Calendar OAuth flow
+     security:
+       - bearerAuth: []
+     responses:
+       '200':
+         description: OAuth authorization URL
+         content:
+           application/json:
+             schema:
+               type: object
+               properties:
+                 authUrl:
+                   type: string
+                   description: Google OAuth authorization URL
+
+ /sync/calendar/google/connect:
+   post:
+     summary: Connect Google Calendar
+     description: Connect a Google Calendar using authorization code
+     security:
+       - bearerAuth: []
+     requestBody:
+       required: true
+       content:
+         application/json:
+           schema:
+             type: object
+             required:
+               - authCode
+             properties:
+               authCode:
+                 type: string
+                 description: Google OAuth authorization code
+     responses:
+       '200':
+         description: Calendar connected successfully
+         content:
+           application/json:
+             schema:
+               type: object
+               properties:
+                 success:
+                   type: boolean
+                 calendarId:
+                   type: string
+                 calendarName:
+                   type: string
+       '400':
+         description: Invalid authorization code
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/Error'
+
+ /sync/calendar/google/sync:
+   post:
+     summary: Sync Google Calendar
+     description: Perform bidirectional synchronization with Google Calendar
+     security:
+       - bearerAuth: []
+     responses:
+       '200':
+         description: Sync completed successfully
+         content:
+           application/json:
+             schema:
+               type: object
+               properties:
+                 message:
+                   type: string
+       '400':
+         description: Sync configuration error
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/Error'
+
+ /sync/calendar/ical/{userId}:
+   get:
+     summary: Get iCal feed
+     description: Export professional's availability as iCal format
+     parameters:
+       - name: userId
+         in: path
+         required: true
+         schema:
+           type: string
+           format: uuid
+       - name: startDate
+         in: query
+         schema:
+           type: string
+           format: date
+       - name: endDate
+         in: query
+         schema:
+           type: string
+           format: date
+     responses:
+       '200':
+         description: iCal calendar data
+         content:
+           text/calendar:
+             schema:
+               type: string
+       '404':
+         description: User not found
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/Error'
+
+ /sync/calendar/connections:
+   get:
+     summary: Get calendar connections
+     description: Get all calendar connections for the current user
+     security:
+       - bearerAuth: []
+     responses:
+       '200':
+         description: List of calendar connections
+         content:
+           application/json:
+             schema:
+               type: object
+               properties:
+                 connections:
+                   type: array
+                   items:
+                     type: object
+                     properties:
+                       id:
+                         type: string
+                         format: uuid
+                       type:
+                         type: string
+                         enum: [google, ical]
+                       name:
+                         type: string
+                       isActive:
+                         type: boolean
+                       lastSync:
+                         type: string
+                         format: date-time
+                       status:
+                         type: string
+                         enum: [pending, in_progress, completed, failed]
+
+ /sync/calendar/disconnect/{calendarType}:
+   delete:
+     summary: Disconnect calendar
+     description: Disconnect a calendar integration
+     security:
+       - bearerAuth: []
+     parameters:
+       - name: calendarType
+         in: path
+         required: true
+         schema:
+           type: string
+           enum: [google, ical]
+     responses:
+       '200':
+         description: Calendar disconnected successfully
+         content:
+           application/json:
+             schema:
+               type: object
+               properties:
+                 message:
+                   type: string
+       '404':
+         description: Calendar connection not found
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/Error'
+
+ /sync/calendar/resolve-conflicts:
+   post:
+     summary: Resolve sync conflicts
+     description: Resolve conflicts detected during calendar synchronization
+     security:
+       - bearerAuth: []
+     requestBody:
+       required: true
+       content:
+         application/json:
+           schema:
+             type: object
+             required:
+               - conflicts
+             properties:
+               conflicts:
+                 type: array
+                 items:
+                   type: object
+                   required:
+                     - id
+                     - resolution
+                   properties:
+                     id:
+                       type: string
+                       format: uuid
+                       description: Conflict log ID
+                     resolution:
+                       type: string
+                       enum: [keep_local, keep_remote, manual]
+                       description: How to resolve the conflict
+     responses:
+       '200':
+         description: Conflicts resolved successfully
+         content:
+           application/json:
+             schema:
+               type: object
+               properties:
+                 message:
+                   type: string
+       '400':
+         description: Invalid conflict resolution data
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/Error'
+
+ /sync/calendar/logs:
+   get:
+     summary: Get sync logs
+     description: Get synchronization logs and history
+     security:
+       - bearerAuth: []
+     parameters:
+       - name: page
+         in: query
+         schema:
+           type: integer
+           minimum: 1
+           default: 1
+       - name: limit
+         in: query
+         schema:
+           type: integer
+           minimum: 1
+           maximum: 100
+           default: 20
+       - name: status
+         in: query
+         schema:
+           type: string
+           enum: [success, error, conflict]
+       - name: operation
+         in: query
+         schema:
+           type: string
+           enum: [push, pull, sync, conflict, resolution]
+     responses:
+       '200':
+         description: Sync logs
+         content:
+           application/json:
+             schema:
+               type: object
+               properties:
+                 logs:
+                   type: array
+                   items:
+                     type: object
+                     properties:
+                       id:
+                         type: string
+                         format: uuid
+                       operation:
+                         type: string
+                       status:
+                         type: string
+                       message:
+                         type: string
+                       created_at:
+                         type: string
+                         format: date-time
+                       resolved:
+                         type: boolean
+                       resolution:
+                         type: string
+                 pagination:
+                   $ref: '#/components/schemas/Pagination'

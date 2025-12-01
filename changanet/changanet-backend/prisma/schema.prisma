@@ -1,0 +1,1663 @@
+/**
+ * @archivo prisma/schema.prisma - Esquema de base de datos de Changánet
+ * @descripción Define estructura relacional completa de la plataforma (REQ-01 a REQ-45)
+ * @sprint Sprint 1 – Autenticación y Perfiles
+ * @tarjeta Tarjeta 1: [Backend] Implementar API de Registro y Login
+ * @impacto Económico: Base de datos robusta para transacciones seguras y escalables
+ */
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+  output = "../docs/database-diagram.png"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum EstadoServicio {
+  PENDIENTE
+  AGENDADO
+  COMPLETADO
+  CANCELADO
+}
+
+enum EstadoCotizacion {
+  PENDIENTE
+  ACEPTADO
+  RECHAZADO
+}
+
+enum NotificationPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum NotificationType {
+  MENSAJE
+  COTIZACION
+  SERVICIO
+  PAGO
+  SISTEMA
+  MARKETING
+}
+
+// MODELO: usuarios
+// FUNCIÓN: Almacena todos los usuarios del sistema (clientes y profesionales).
+// RELACIÓN PRD: REQ-01 (Registro), REQ-02 (Login), REQ-03 (Verificación de email).
+// TARJETA BACKEND: Tarjeta 1: [Backend] Implementar API de Registro y Login.
+// SPRINT: Sprint 1 (Primera Entrega) - "Implementación del producto de software".
+model usuarios {
+  id                    String    @id @default(uuid())
+  email                 String    @unique
+  hash_contrasena       String?
+  nombre                String
+  telefono              String?
+  rol                   String    @default("cliente")
+  esta_verificado       Boolean   @default(false)
+  bloqueado             Boolean   @default(false) // RB-05: Usuarios bloqueados no pueden acceder
+  token_verificacion    String?   @unique
+  token_expiracion      DateTime?
+  refresh_token_hash    String?   @unique
+
+  // Email sending limits (max 1 email per hour per user)
+  ultimo_email_verificacion DateTime?
+  ultimo_email_reset_password DateTime?
+  creado_en             DateTime  @default(now())
+  actualizado_en        DateTime?
+  google_id             String?   @unique
+  social_provider       String?   // 'google' or 'facebook'
+  social_provider_id    String?   @unique // ID from the social provider
+  url_foto_perfil       String?
+  fcm_token             String?   // Token para notificaciones push FCM
+  sms_enabled           Boolean   @default(false) // Permite envío de notificaciones SMS
+
+  // Campos adicionales para perfil de cliente
+  direccion             String?   // Dirección del cliente
+  preferencias_servicio String?   // Preferencias de servicio del cliente
+
+  perfil_profesional perfiles_profesionales?
+  servicios_como_cliente servicios[] @relation("ServicioCliente")
+  servicios_como_profesional servicios[] @relation("ServicioProfesional")
+  resenas_escritas resenas[]
+  mensajes_enviados mensajes[] @relation("MensajeRemitente")
+  mensajes_recibidos mensajes[] @relation("MensajeDestinatario")
+  disponibilidad disponibilidad[] @relation("DisponibilidadProfesional")
+  reservas_realizadas disponibilidad[] @relation("DisponibilidadReservadaCliente")
+  notificaciones notificaciones[]
+  cotizaciones_como_cliente cotizaciones[] @relation("CotizacionCliente")
+  cotizacion_respuestas cotizacion_respuestas[] @relation("CotizacionRespuestaProfesional")
+  verification_request verification_requests?
+  pagos_como_cliente pagos[] @relation("PagoCliente")
+  pagos_como_profesional pagos[] @relation("PagoProfesional")
+
+  // Relaciones para servicios recurrentes
+  servicios_recurrrentes_cliente servicios_recurrrentes[] @relation("ServicioRecurrenteCliente")
+  servicios_recurrrentes_profesional servicios_recurrrentes[] @relation("ServicioRecurrenteProfesional")
+
+  // Relaciones para favoritos
+  favoritos_como_cliente favoritos[] @relation("FavoritoCliente")
+  favoritos_como_profesional favoritos[] @relation("FavoritoProfesional")
+
+  // Relaciones para logros y gamificación
+  logros_obtenidos logros_usuario[]
+
+  // Relaciones para intentos fallidos de autenticación
+  failed_attempts failed_attempts[]
+
+  // Relaciones para conversaciones y mensajes
+  conversations_as_client conversations[] @relation("ConversationClient")
+  conversations_as_professional conversations[] @relation("ConversationProfessional")
+  messages_sent messages[]
+
+  // Relaciones para sistema avanzado de disponibilidad
+  professional_availabilities professionals_availability[] @relation("ProfessionalAvailability")
+  availability_slots availability_slots[] @relation("AvailabilitySlotProfessional")
+  booked_slots availability_slots[] @relation("SlotBookedBy")
+  professional_appointments appointments[] @relation("AppointmentProfessional")
+  client_appointments appointments[] @relation("AppointmentClient")
+  blocked_slots blocked_slots[] @relation("BlockedSlotProfessional")
+
+  // Relaciones para sincronización de calendarios
+  calendar_connections calendar_connections[]
+  calendar_sync_logs calendar_sync_logs[]
+
+  // Relaciones para reputación y medallas
+  reputation_score reputation_scores?
+  user_medals user_medals[]
+
+  // Relaciones para auditoría y seguridad
+  audit_logs audit_logs[]
+
+  // Relaciones para sistema de pagos y comisiones
+  cuentas_bancarias cuentas_bancarias[] @relation("CuentaBancariaProfesional")
+  retiros retiros[] @relation("RetiroProfesional")
+  transactions_log transactions_log[] @relation("TransaccionUsuario")
+  payouts payouts[] @relation("PayoutProfesional")
+
+  // Relaciones para servicios urgentes
+  urgent_requests_as_client urgent_requests[] @relation("UrgentRequestClient")
+  urgent_candidates_as_professional urgent_request_candidates[] @relation("UrgentCandidateProfessional")
+  urgent_assignments_as_professional urgent_assignments[] @relation("UrgentAssignmentProfessional")
+
+  // Relaciones para sistema de notificaciones avanzado
+  notification_preferences notification_preferences?
+  notification_metrics notification_metrics[]
+
+  // Preferencias de notificaciones - Sección 11 del PRD
+  notificaciones_push Boolean @default(true)
+  notificaciones_email Boolean @default(true)
+  notificaciones_sms Boolean @default(false)
+  notificaciones_servicios Boolean @default(true)
+  notificaciones_mensajes Boolean @default(true)
+  notificaciones_pagos Boolean @default(true)
+  notificaciones_marketing Boolean @default(false)
+
+  @@index([rol])
+  @@index([esta_verificado])
+  @@index([telefono])
+  @@index([sms_enabled])
+}
+
+// MODELO: failed_attempts
+// FUNCIÓN: Registra intentos fallidos de autenticación para implementar lockout y monitoreo de seguridad
+// RELACIÓN PRD: Mejoras de seguridad avanzadas para autenticación
+model failed_attempts {
+  id           String   @id @default(uuid())
+  email        String?  // Email usado en el intento (puede no existir en DB)
+  user_id      String?  // ID del usuario si existe
+  user         usuarios? @relation(fields: [user_id], references: [id])
+  ip_address   String   // IP del cliente
+  user_agent   String?  // User agent del navegador
+  reason       String   // Razón del fallo: "invalid_password", "user_not_found", "account_locked"
+  attempt_time DateTime @default(now())
+  blocked_until DateTime? // Fecha hasta la que está bloqueado el usuario/IP
+
+  @@index([email])
+  @@index([user_id])
+  @@index([ip_address])
+  @@index([attempt_time])
+  @@index([blocked_until])
+}
+
+// MODELO: perfiles_profesionales
+// FUNCIÓN: Almacena la información específica de los profesionales con soporte geoespacial y búsqueda full-text.
+// RELACIÓN PRD: REQ-06 (Foto), REQ-07 (Especialidad), REQ-08 (Experiencia), REQ-09 (Zona), REQ-10 (Tarifas), REQ-11-15 (Búsqueda y Filtros).
+// TARJETA BACKEND: Tarjeta 2: [Backend] Implementar API para Gestión de Perfiles Profesionales.
+// SPRINT: Sprint 1 (Primera Entrega) - "Implementación del producto de software".
+model perfiles_profesionales {
+  usuario_id       String   @id @default(uuid()) // PK y FK que enlaza con usuarios.id
+  usuario          usuarios @relation(fields: [usuario_id], references: [id])
+
+  especialidad     String   // Especialidad principal (para compatibilidad)
+  especialidades   String?  // JSON array de especialidades múltiples - REQ-07 mejorado
+  anos_experiencia Int?
+  zona_cobertura   String
+  ubicacion        String? // JSON string with lat/lng for SQLite compatibility
+  latitud          Float?   // Coordenadas GPS para cálculo de distancia real
+  longitud         Float?   // Coordenadas GPS para cálculo de distancia real
+
+  // Sistema de tarifas flexible - REQ-10 mejorado
+  tipo_tarifa      String   @default("hora") // "hora", "servicio", "convenio"
+  tarifa_hora      Float?
+  tarifa_servicio  Float?
+  tarifa_convenio  String?  // Descripción para "a convenir"
+
+  descripcion      String?
+  url_foto_perfil  String?
+  url_foto_portada String?   // Foto de portada adicional - REQ-06 mejorado
+  esta_disponible  Boolean  @default(true) // Disponibilidad general del profesional
+  calificacion_promedio Float?
+  estado_verificacion String @default("pendiente")
+  verificado_en    DateTime?
+  url_documento_verificacion String?
+
+  // Campos de búsqueda full-text (simplified for SQLite)
+  search_vector    String?
+  search_vector_especialidades String?
+
+  creado_en        DateTime @default(now())
+  actualizado_en   DateTime?
+
+  // Índices geoespaciales (simplificados para SQLite)
+  @@index([latitud, longitud])
+
+  // Índices de búsqueda (simplificados para SQLite)
+  @@index([search_vector])
+  @@index([search_vector_especialidades])
+
+  // Índices compuestos para filtros comunes
+  @@index([especialidad, zona_cobertura, calificacion_promedio, tarifa_hora, esta_disponible, estado_verificacion])
+
+  // Índices para ordenamiento
+  @@index([calificacion_promedio])
+  @@index([tarifa_hora])
+
+  // Índices existentes
+  @@index([tipo_tarifa])
+}
+
+// MODELO: servicios
+// FUNCIÓN: Representa un servicio contratado, conectando a un cliente con un profesional.
+// RELACIÓN PRD: REQ-29 (Agendamiento), RB-02 (Solo reseñas si el servicio está completado).
+// TARJETA BACKEND: Tarjeta 6: [Backend] Implementar API de Gestión de Disponibilidad (parte de agendamiento).
+// SPRINT: Sprint 2 (Segunda Entrega) - "Consolidar y mejorar el producto".
+model servicios {
+  id             String   @id @default(uuid())
+  cliente_id     String
+  cliente        usuarios @relation("ServicioCliente", fields: [cliente_id], references: [id])
+  profesional_id String
+  profesional    usuarios @relation("ServicioProfesional", fields: [profesional_id], references: [id])
+  descripcion    String
+  estado         EstadoServicio @default(PENDIENTE)
+  fecha_agendada DateTime?
+  creado_en      DateTime @default(now())
+  completado_en  DateTime?
+  es_urgente     Boolean  @default(false) // Indica si el servicio es urgente - Sección 10 del PRD
+  resena         resenas?
+  pago           pagos?
+
+  // Relación con disponibilidad para agendamiento
+  slot_reservado disponibilidad?
+
+  // Relación con servicios recurrentes
+  servicio_recurrente_id String?
+  servicio_recurrente servicios_recurrrentes? @relation(fields: [servicio_recurrente_id], references: [id])
+
+  // Relación con citas avanzadas
+  appointment appointments?
+
+  // Relación con payouts
+  payouts payouts[]
+
+  @@index([cliente_id])
+  @@index([profesional_id])
+  @@index([estado])
+  @@index([creado_en])
+  @@index([es_urgente])
+  @@index([cliente_id, estado])
+  @@index([profesional_id, estado])
+  @@index([estado, creado_en])
+  @@index([es_urgente, estado])
+  @@index([fecha_agendada])
+  @@index([cliente_id, fecha_agendada])
+  @@index([profesional_id, fecha_agendada])
+}
+
+model resenas {
+  id            String   @id @default(uuid())
+  servicio_id   String   @unique
+  servicio      servicios @relation(fields: [servicio_id], references: [id])
+  cliente_id    String
+  cliente       usuarios @relation(fields: [cliente_id], references: [id])
+  calificacion  Int
+  comentario    String?
+  url_foto      String?
+  creado_en     DateTime @default(now())
+
+  // Índices existentes
+  @@index([servicio_id])
+
+  // Índices optimizados para sistema de reseñas
+  @@index([cliente_id]) // Para obtener reseñas del cliente
+  @@index([creado_en]) // Para ordenamiento por fecha
+  @@index([calificacion]) // Para ordenamiento por calificación
+
+  // Índices compuestos para consultas principales
+  @@index([cliente_id, creado_en]) // Para reseñas del cliente ordenadas por fecha
+  @@index([calificacion, creado_en]) // Para reseñas ordenadas por calificación y fecha
+}
+
+// MODELO: mensajes
+// FUNCIÓN: Almacena el historial de comunicación entre usuarios (el chat).
+// RELACIÓN PRD: REQ-16 (Chat interno), REQ-17 (Mensajes de texto), REQ-18 (Imágenes), REQ-20 (Historial).
+// TARJETA BACKEND: Tarjeta 4: [Backend] Implementar API de Chat en Tiempo Real.
+// SPRINT: Sprint 1 (Primera Entrega) - "Implementación del producto de software".
+model mensajes {
+  id             String   @id @default(uuid()) // Identificador único del mensaje
+  remitente_id   String   // FK que enlaza con el usuario remitente
+  remitente      usuarios @relation("MensajeRemitente", fields: [remitente_id], references: [id])
+  destinatario_id String  // FK que enlaza con el usuario destinatario
+  destinatario   usuarios @relation("MensajeDestinatario", fields: [destinatario_id], references: [id])
+  contenido      String
+  url_imagen     String?
+  esta_leido     Boolean  @default(false)
+  creado_en      DateTime @default(now())
+
+  @@index([remitente_id, creado_en])
+  @@index([destinatario_id, creado_en])
+  @@index([remitente_id, destinatario_id, creado_en])
+  @@index([creado_en])
+}
+
+// MODELO: disponibilidad
+// FUNCIÓN: Gestiona los horarios en los que un profesional está disponible para trabajar.
+// RELACIÓN PRD: REQ-26 (Calendario), REQ-27 (Horarios), REQ-28 (Visibilidad), REQ-29 (Agendamiento).
+// TARJETA BACKEND: Tarjeta 6: [Backend] Implementar API de Gestión de Disponibilidad.
+// SPRINT: Sprint 2 (Segunda Entrega) - "Consolidar y mejorar el producto".
+model disponibilidad {
+  id            String   @id @default(uuid()) // Identificador único del bloque de disponibilidad
+  profesional_id String  // FK que enlaza con el profesional
+  profesional   usuarios @relation("DisponibilidadProfesional", fields: [profesional_id], references: [id])
+  fecha         DateTime // REQ-27: Fecha del bloque de disponibilidad
+  hora_inicio   DateTime // REQ-27: Hora de inicio del bloque
+  hora_fin      DateTime // REQ-27: Hora de fin del bloque
+  esta_disponible Boolean @default(true)
+
+  // Campos para agendamiento - REQ-29: Permitir agendar servicios directamente
+  reservado_por String?  // ID del cliente que reservó el slot
+  reservado_cliente usuarios? @relation("DisponibilidadReservadaCliente", fields: [reservado_por], references: [id])
+  reservado_en  DateTime? // Fecha y hora de la reserva
+  servicio_id   String?   @unique // ID del servicio agendado
+  servicio      servicios? @relation(fields: [servicio_id], references: [id])
+
+  @@index([profesional_id, fecha])
+  @@index([reservado_por])
+  @@index([servicio_id])
+  @@index([esta_disponible, fecha])
+}
+
+// MODELO: notificaciones - Enhanced with new fields
+// FUNCIÓN: Almacena las alertas automáticas que recibe el usuario con sistema completo mejorado.
+// RELACIÓN PRD: REQ-19 (Notificaciones automáticas) + Sección 11 (Sistema de Notificaciones Avanzado).
+// TARJETA BACKEND: Tarjeta 4: [Backend] Implementar API de Chat en Tiempo Real (parte de notificaciones).
+// SPRINT: Sprint 1 (Primera Entrega) - "Implementación del producto de software".
+model notificaciones {
+  id         String   @id @default(uuid())
+  usuario_id String
+  usuario    usuarios @relation(fields: [usuario_id], references: [id])
+
+  // Sistema de prioridades
+  prioridad  NotificationPriority @default(MEDIUM)
+
+  // Tipo de notificación con subcategorías
+  tipo       NotificationType
+  subtipo    String?  // "directo", "agendado", "urgente", etc.
+
+  // Entidad relacionada (para mejor tracking)
+  entity_type String? // "servicio", "cotizacion", "pago", "mensaje", etc.
+  entity_id   String? // ID de la entidad relacionada
+
+  // Contenido con plantillas
+  titulo     String
+  mensaje    String
+  metadata   String?  // JSON con variables de plantilla
+
+  // Estados y control
+  esta_leido Boolean  @default(false)
+  canales_enviados String? // JSON: ["push", "email", "sms"]
+  fecha_envio DateTime?
+
+  // Programación y expiración
+  programado_para DateTime?
+  expira_en       DateTime?
+
+  // Relaciones
+  plantilla_usada String? // ID de plantilla utilizada
+
+  creado_en  DateTime @default(now())
+  actualizado_en DateTime?
+
+  @@index([usuario_id, esta_leido])
+  @@index([usuario_id, prioridad])
+  @@index([usuario_id, creado_en])
+  @@index([tipo, subtipo])
+  @@index([programado_para])
+  @@index([expira_en])
+  @@index([entity_type, entity_id])
+  @@index([usuario_id, entity_type, entity_id])
+  @@index([usuario_id, tipo, esta_leido])
+  @@index([usuario_id, creado_en, esta_leido])
+  @@index([expira_en, esta_leido])
+}
+
+// Modelo de preferencias de notificación
+model notification_preferences {
+  id         String   @id @default(uuid())
+  usuario_id String   @unique
+  usuario    usuarios @relation(fields: [usuario_id], references: [id])
+
+  // Configuración general
+  enabled   Boolean  @default(true)
+  timezone  String   @default("America/Buenos_Aires")
+
+  // Canales disponibles
+  canales   String   // JSON: {push: true, email: true, sms: false, in_app: true}
+
+  // Categorías de notificación
+  categorias String  // JSON con configuración por categoría
+
+  // Horarios silenciosos
+  quiet_hours_enabled Boolean @default(false)
+  quiet_start_time    String? // "22:00"
+  quiet_end_time      String? // "08:00"
+
+  // Frecuencia de resumen
+  summary_frequency   String  @default("immediate") // "immediate", "hourly", "daily"
+
+  // Configuración avanzada
+  max_notifications_per_hour Int @default(50)
+  group_similar             Boolean @default(true)
+  sound_enabled             Boolean @default(true)
+
+  creado_en  DateTime @default(now())
+  actualizado_en DateTime?
+
+  @@index([usuario_id])
+}
+
+// Modelo de plantillas de notificación
+model notification_templates {
+  id          String   @id @default(uuid())
+  nombre      String   @unique
+  descripcion String?
+
+  // Tipo y subcategoría
+  tipo        NotificationType
+  subtipo     String?
+
+  // Contenido por canal
+  titulo_push     String?
+  mensaje_push    String?
+  titulo_email    String?
+  mensaje_email   String?
+  asunto_email    String?
+  mensaje_sms     String?
+
+  // Variables disponibles
+  variables   String? // JSON array de variables requeridas
+
+  // Prioridad por defecto
+  prioridad_default NotificationPriority @default(MEDIUM)
+
+  // Metadatos
+  activo      Boolean  @default(true)
+  version     Int      @default(1)
+
+  creado_en   DateTime @default(now())
+  actualizado_en DateTime?
+
+  @@index([tipo, subtipo])
+  @@index([activo])
+}
+
+// Modelo de métricas de notificación
+model notification_metrics {
+  id         String   @id @default(uuid())
+  usuario_id String?
+  usuario    usuarios? @relation(fields: [usuario_id], references: [id])
+
+  // Métricas básicas
+  tipo_notificacion String
+  canal             String // "push", "email", "sms", "in_app"
+  enviada           Boolean @default(false)
+  entregada         Boolean @default(false)
+  leida             Boolean @default(false)
+  clickeada         Boolean @default(false)
+
+  // Timestamps
+  fecha_envio       DateTime?
+  fecha_entrega     DateTime?
+  fecha_lectura     DateTime?
+  fecha_click       DateTime?
+
+  // Metadatos adicionales
+  metadata          String? // JSON con info adicional
+
+  creado_en DateTime @default(now())
+
+  @@index([usuario_id])
+  @@index([tipo_notificacion])
+  @@index([canal])
+  @@index([enviada, entregada, leida])
+  @@index([fecha_envio])
+  @@index([usuario_id, fecha_envio])
+  @@index([canal, fecha_envio])
+  @@index([tipo_notificacion, canal, fecha_envio])
+}
+model cotizaciones {
+  id             String   @id @default(uuid())
+  cliente_id     String
+  cliente        usuarios @relation("CotizacionCliente", fields: [cliente_id], references: [id])
+  descripcion    String
+  zona_cobertura String?
+  fotos_urls     String?  // JSON array de URLs de fotos subidas - REQ-31 mejorado
+  profesionales_solicitados String? // JSON array de IDs de profesionales preseleccionados - REQ-32
+  creado_en      DateTime @default(now())
+
+  // Relaciones con respuestas de profesionales
+  respuestas     cotizacion_respuestas[]
+
+  @@index([cliente_id])
+  @@index([creado_en])
+}
+
+// Modelo separado para respuestas de profesionales a cotizaciones
+model cotizacion_respuestas {
+  id             String   @id @default(uuid())
+  cotizacion_id  String
+  cotizacion     cotizaciones @relation(fields: [cotizacion_id], references: [id])
+  profesional_id String
+  profesional    usuarios @relation("CotizacionRespuestaProfesional", fields: [profesional_id], references: [id])
+  precio         Float?
+  comentario     String?
+  estado         EstadoCotizacion @default(PENDIENTE) // pendiente, aceptado, rechazado
+  creado_en      DateTime @default(now())
+  respondido_en  DateTime?
+
+  @@unique([cotizacion_id, profesional_id]) // Un profesional solo puede responder una vez por cotización
+  @@index([cotizacion_id])
+  @@index([profesional_id])
+  @@index([estado])
+}
+
+// MODELO: verification_requests
+// FUNCIÓN: Gestiona solicitudes de verificación de identidad para profesionales.
+// RELACIÓN PRD: REQ-36 (Subir documento), REQ-37 (Insignia verificado), REQ-40 (Aprobación admin).
+// TARJETA BACKEND: Tarjeta 8: [Backend] Implementar Sistema de Verificación de Identidad.
+// SPRINT: Sprint 3 (Tercera Entrega) - "Verificación y confianza".
+model verification_requests {
+  id            String   @id @default(uuid())
+  usuario_id    String   @unique // Un usuario solo puede tener una solicitud activa
+  usuario       usuarios @relation(fields: [usuario_id], references: [id])
+  documento_url String   // URL del documento subido (Cloudinary/Firebase)
+  estado        String   @default("pendiente") // "pendiente", "aprobado", "rechazado"
+  comentario_admin String? // Comentario del administrador al aprobar/rechazar
+  creado_en     DateTime @default(now())
+  revisado_en   DateTime?
+  revisado_por  String?  // ID del administrador que revisó
+
+  @@index([usuario_id])
+}
+
+// MODELO: pagos
+// FUNCIÓN: Registra todas las transacciones de pago para trazabilidad y generación de comprobantes
+// RELACIÓN PRD: REQ-41 (Integración pasarelas), REQ-42 (Custodia), REQ-44 (Retiro), REQ-45 (Comprobantes)
+// TARJETA BACKEND: Tarjeta 7: [Backend] Implementar Sistema de Pagos y Comisiones
+// SPRINT: Sprint 3 – Servicios y Transacciones
+model pagos {
+  id                String   @id @default(uuid())
+  servicio_id       String   @unique
+  servicio          servicios @relation(fields: [servicio_id], references: [id])
+  cliente_id        String
+  cliente           usuarios @relation("PagoCliente", fields: [cliente_id], references: [id])
+  profesional_id    String
+  profesional       usuarios @relation("PagoProfesional", fields: [profesional_id], references: [id])
+  monto_total       Float
+  comision_plataforma Float
+  monto_profesional Float
+  mercado_pago_id   String?  @unique // ID del pago en Mercado Pago
+  estado            String   @default("pendiente") // "pendiente", "aprobado", "liberado", "reembolsado"
+  metodo_pago       String?  // "tarjeta", "transferencia", etc.
+  fecha_pago        DateTime?
+  fecha_liberacion  DateTime?
+  url_comprobante   String?  // URL del comprobante generado
+  creado_en         DateTime @default(now())
+
+  // Nuevos campos para configuración de comisiones y custodia
+  commission_setting_id String? // FK a commission_settings para configuración de comisión
+  commission_setting commission_settings? @relation(fields: [commission_setting_id], references: [id])
+  escrow_release_deadline DateTime? // Fecha límite para liberación automática (RB-04: 24h)
+
+  @@index([cliente_id])
+  @@index([profesional_id])
+  @@index([estado])
+  @@index([mercado_pago_id])
+  @@index([commission_setting_id])
+
+  // Índices optimizados para cursor-based pagination y consultas frecuentes
+  @@index([creado_en, id]) // Para cursor-based pagination por fecha de creación
+  @@index([estado, creado_en, id]) // Para filtrado por estado con cursor pagination
+  @@index([cliente_id, creado_en, id]) // Para pagos de cliente con cursor pagination
+  @@index([profesional_id, creado_en, id]) // Para pagos de profesional con cursor pagination
+  @@index([fecha_liberacion]) // Para liberación automática de fondos
+  @@index([estado, fecha_liberacion]) // Para consultas de liberación automática
+  @@index([creado_en]) // Para consultas por rango de fechas
+  @@index([cliente_id, estado]) // Para dashboard de cliente
+  @@index([profesional_id, estado]) // Para dashboard de profesional
+}
+
+// MODELO: cuentas_bancarias
+// FUNCIÓN: Almacena información de cuentas bancarias de profesionales para retiros de fondos
+// RELACIÓN PRD: REQ-44 (Retiro de fondos a cuenta bancaria)
+// SEGURIDAD: Campos sensibles encriptados (numero_cuenta, cvu, documento_titular)
+// ESCALABILIDAD: Índices optimizados para consultas frecuentes
+model cuentas_bancarias {
+  id                    String   @id @default(uuid())
+  profesional_id        String   // FK que enlaza con usuarios.id (solo profesionales)
+  profesional           usuarios @relation("CuentaBancariaProfesional", fields: [profesional_id], references: [id])
+
+  banco                 String   // Nombre del banco
+  tipo_cuenta           String   @default("checking") // "checking", "savings"
+  numero_cuenta_encrypted String // Número de cuenta encriptado
+  cvu_encrypted         String?  // CVU encriptado para transferencias
+  alias                 String?  // Alias para transferencias rápidas
+  titular               String   // Nombre del titular de la cuenta
+  documento_titular_encrypted String // Documento del titular encriptado
+
+  estado                String   @default("pendiente") // "pendiente", "activa", "inactiva", "rechazada"
+  verificado            Boolean  @default(false) // Si la cuenta ha sido verificada
+  fecha_verificacion    DateTime? // Fecha de verificación por admin
+  verificado_por        String?  // ID del admin que verificó
+
+  motivo_rechazo        String?  // Motivo si fue rechazada
+  creado_en             DateTime @default(now())
+  actualizado_en        DateTime @updatedAt
+
+  // Relaciones
+  retiros               retiros[] // Historial de retiros desde esta cuenta
+
+  @@index([profesional_id])
+  @@index([estado])
+  @@index([verificado])
+  @@index([profesional_id, estado])
+  @@unique([profesional_id, numero_cuenta_encrypted]) // Un profesional no puede tener cuentas duplicadas
+}
+
+// MODELO: retiros
+// FUNCIÓN: Registra solicitudes de retiro de fondos de profesionales a sus cuentas bancarias
+// RELACIÓN PRD: REQ-44 (Retiro de fondos a cuenta bancaria)
+// AUDITORÍA: Historial completo con estados y trazabilidad
+model retiros {
+  id                    String   @id @default(uuid())
+  profesional_id        String   // FK que enlaza con usuarios.id
+  profesional           usuarios @relation("RetiroProfesional", fields: [profesional_id], references: [id])
+
+  cuenta_bancaria_id    String   // FK que enlaza con cuentas_bancarias.id
+  cuenta_bancaria       cuentas_bancarias @relation(fields: [cuenta_bancaria_id], references: [id])
+
+  monto                 Float    // Monto solicitado para retiro
+  estado                String   @default("pendiente") // "pendiente", "procesando", "completado", "fallido", "cancelado"
+
+  fecha_solicitud       DateTime @default(now()) // Fecha de solicitud
+  fecha_procesamiento   DateTime? // Fecha de procesamiento
+  referencia_bancaria   String?  // Referencia bancaria del retiro
+  notas                 String?  // Notas adicionales
+  motivo_rechazo        String?  // Motivo si fue rechazado
+
+  procesado_por         String?  // ID del admin que procesó
+  procesado_en          DateTime? // Fecha de procesamiento
+
+  creado_en             DateTime @default(now())
+
+  @@index([profesional_id])
+  @@index([cuenta_bancaria_id])
+  @@index([estado])
+  @@index([fecha_solicitud])
+  @@index([profesional_id, estado])
+  @@index([estado, fecha_solicitud])
+}
+
+// MODELO: commission_settings
+// FUNCIÓN: Configura porcentajes de comisión aplicables a diferentes tipos de servicios
+// RELACIÓN PRD: REQ-43 (Comisión configurable entre 5-10%)
+// FLEXIBILIDAD: Soporte para comisiones por tipo de servicio o globales
+model commission_settings {
+  id                    String   @id @default(uuid())
+  nombre                String   // Nombre descriptivo (ej: "Comisión Estándar", "Comisión Urgente")
+  porcentaje            Float    // Porcentaje de comisión (5.0 a 10.0)
+  tipo_servicio         String?  // Tipo de servicio específico (null = global)
+
+  descripcion           String?  // Descripción detallada
+  activo                Boolean  @default(true) // Si está activo
+  fecha_creacion        DateTime @default(now())
+  creado_por            String?  // ID del admin que creó
+
+  // Relaciones
+  pagos                 pagos[]  // Pagos que usan esta configuración
+
+  @@index([activo])
+  @@index([tipo_servicio])
+  @@index([activo, tipo_servicio])
+
+  // Índices optimizados para consultas de configuración de comisiones
+  @@index([activo, tipo_servicio, fecha_creacion]) // Para obtener configuración aplicable
+}
+
+// MODELO: transactions_log
+// FUNCIÓN: Registro de auditoría completo para todas las transacciones financieras
+// SEGURIDAD: Trazabilidad completa de operaciones sensibles
+// CUMPLIMIENTO: Requisitos regulatorios de auditoría financiera
+model transactions_log {
+  id                    String   @id @default(uuid())
+  tipo_transaccion      String   // "payment_created", "payment_released", "withdrawal_requested", "commission_calculated", etc.
+  entidad_tipo          String   // "pagos", "retiros", "payouts", "commission_settings"
+  entidad_id            String   // ID de la entidad afectada
+
+  usuario_id            String?  // Usuario que realizó la acción
+  usuario               usuarios? @relation("TransaccionUsuario", fields: [usuario_id], references: [id])
+
+  monto                 Float?   // Monto involucrado (si aplica)
+  detalles              String?  // JSON con detalles adicionales
+  ip_address            String?  // IP del usuario
+  user_agent            String?  // User agent del navegador
+
+  exito                 Boolean  @default(true) // Si la transacción fue exitosa
+  error_mensaje         String?  // Mensaje de error si falló
+
+  timestamp             DateTime @default(now())
+
+  @@index([tipo_transaccion])
+  @@index([entidad_tipo, entidad_id])
+  @@index([usuario_id])
+  @@index([timestamp])
+  @@index([exito])
+  @@index([tipo_transaccion, timestamp])
+}
+
+// MODELO: payouts
+// FUNCIÓN: Registra pagos realizados a profesionales después de liberación de fondos en custodia
+// RELACIÓN PRD: REQ-42 (Custodia de fondos), REQ-43 (Comisión), REQ-44 (Retiro)
+// AUDITORÍA: Historial completo de pagos a profesionales
+model payouts {
+  id                    String   @id @default(uuid())
+  profesional_id        String   // FK que enlaza con usuarios.id
+  profesional           usuarios @relation("PayoutProfesional", fields: [profesional_id], references: [id])
+
+  servicio_id           String?  // FK opcional a servicios.id (si relacionado con servicio específico)
+  servicio              servicios? @relation(fields: [servicio_id], references: [id])
+
+  monto_bruto           Float    // Monto total antes de deducciones
+  comision_plataforma   Float    // Comisión deducida
+  monto_neto            Float    // Monto pagado al profesional
+
+  estado                String   @default("pendiente") // "pendiente", "procesando", "completado", "fallido"
+  metodo_pago           String   @default("bank_transfer") // "bank_transfer", "wallet", etc.
+  referencia_pago       String?  // Referencia bancaria del pago
+
+  fecha_pago            DateTime? // Fecha en que se realizó el pago
+  procesado_en          DateTime? // Fecha de procesamiento
+  notas                 String?  // Notas adicionales
+
+  creado_en             DateTime @default(now())
+
+  @@index([profesional_id])
+  @@index([servicio_id])
+  @@index([estado])
+  @@index([fecha_pago])
+  @@index([profesional_id, estado])
+  @@index([estado, fecha_pago])
+
+  // Índices optimizados para consultas de payouts
+  @@index([creado_en, id]) // Para cursor-based pagination
+  @@index([estado, creado_en, id]) // Para filtrado por estado con cursor pagination
+  @@index([profesional_id, creado_en, id]) // Para payouts de profesional con cursor pagination
+}
+
+// MODELO: servicios_recurrrentes
+// FUNCIÓN: Gestiona servicios programados de forma recurrente (semanal, mensual, etc.)
+// RELACIÓN PRD: Optimización - Programación automática de servicios recurrentes
+// SPRINT: Optimización - Servicios recurrentes
+// IMPACTO: Mejora retención de clientes y ingresos estables para profesionales
+model servicios_recurrrentes {
+  id             String   @id @default(uuid())
+  cliente_id     String
+  cliente        usuarios @relation("ServicioRecurrenteCliente", fields: [cliente_id], references: [id])
+  profesional_id String
+  profesional    usuarios @relation("ServicioRecurrenteProfesional", fields: [profesional_id], references: [id])
+
+  descripcion    String
+  frecuencia     String   // "semanal", "quincenal", "mensual", "bimestral", "trimestral"
+  dia_semana     Int?     // 0-6 (domingo a sábado) para frecuencia semanal
+  dia_mes       Int?     // 1-31 para frecuencia mensual
+  hora_inicio   String   // HH:MM format
+  duracion_horas Float    // duración estimada en horas
+
+  tarifa_base   Float    // tarifa por servicio individual
+  descuento_recurrencia Float @default(0) // descuento porcentual por ser recurrente
+
+  fecha_inicio  DateTime
+  fecha_fin     DateTime? // opcional, si es indefinido
+  activo        Boolean  @default(true)
+
+  creado_en     DateTime @default(now())
+  actualizado_en DateTime?
+
+  // Servicios individuales generados automáticamente
+  servicios_generados servicios[]
+
+  @@index([cliente_id])
+  @@index([profesional_id])
+  @@index([activo])
+  @@index([fecha_inicio])
+  @@index([frecuencia])
+}
+
+// Note: Enums converted to String types for SQLite compatibility
+// Valid values:
+// - rol: "cliente", "profesional", "admin"
+// - estado_verificacion: "pendiente", "verificado", "rechazado"
+// - estado (servicios): "pendiente", "agendado", "completado", "pagado", "cancelado"
+// - tipo (notificaciones): "nuevo_mensaje", "nueva_cotizacion", "servicio_agendado", "resena_recibida", "pago_liberado", "fondos_liberados"
+// - estado (cotizaciones): "pendiente", "aceptado", "rechazado"
+// - frecuencia (servicios_recurrrentes): "semanal", "quincenal", "mensual", "bimestral", "trimestral"
+// - estado (pagos): "pendiente", "aprobado", "liberado", "reembolsado"
+
+// MODELO: conversations
+// FUNCIÓN: Almacena conversaciones entre cliente y profesional para mensajería interna
+model conversations {
+  id             String   @id @default(uuid())
+  client_id      String
+  client         usuarios @relation("ConversationClient", fields: [client_id], references: [id])
+  professional_id String
+  professional   usuarios @relation("ConversationProfessional", fields: [professional_id], references: [id])
+  created_at     DateTime @default(now())
+  updated_at     DateTime?
+
+  messages       messages[]
+
+  @@index([client_id, professional_id])
+  @@index([created_at])
+  // Índice para ordenar conversaciones por última actualización (optimización PostgreSQL)
+  @@index([updated_at(sort: Desc)], name: "conversations_updated_desc_idx")
+  // Índice compuesto para consultas de conversaciones de usuario ordenadas por actualización
+  @@index([client_id, updated_at(sort: Desc)], name: "conversations_client_updated_desc_idx")
+  @@index([professional_id, updated_at(sort: Desc)], name: "conversations_professional_updated_desc_idx")
+}
+
+// MODELO: messages
+// FUNCIÓN: Almacena mensajes dentro de conversaciones con soporte para imágenes y estados de entrega
+model messages {
+  id             String   @id @default(uuid())
+  conversation_id String
+  conversation   conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  sender_id      String
+  sender         usuarios @relation(fields: [sender_id], references: [id])
+  message        String
+  image_url      String?
+  status         String   @default("sent") // 'sent', 'delivered', 'read'
+  created_at     DateTime @default(now())
+
+  @@index([conversation_id])
+  @@index([sender_id])
+  @@index([created_at])
+  @@index([conversation_id, created_at])
+  // Índices optimizados para PostgreSQL - cursor-based pagination
+  @@index([conversation_id, id(sort: Desc)])
+  // Índice parcial para mensajes no leídos (optimización PostgreSQL)
+  @@index([conversation_id, status], name: "messages_conversation_status_idx")
+  // Índice compuesto para consultas de mensajes recientes por conversación
+  @@index([conversation_id, created_at(sort: Desc)], name: "messages_conversation_created_desc_idx")
+}
+
+// MODELO: favoritos
+// FUNCIÓN: Permite a los clientes marcar profesionales como favoritos para acceso rápido
+// RELACIÓN PRD: Mejora UX para clientes recurrentes
+// SPRINT: Mejoras de UX
+model favoritos {
+  id             String   @id @default(uuid())
+  cliente_id     String
+  cliente        usuarios @relation("FavoritoCliente", fields: [cliente_id], references: [id])
+  profesional_id String
+  profesional    usuarios @relation("FavoritoProfesional", fields: [profesional_id], references: [id])
+  creado_en      DateTime @default(now())
+
+  @@unique([cliente_id, profesional_id]) // Un cliente solo puede tener un favorito por profesional
+  @@index([cliente_id])
+  @@index([profesional_id])
+}
+
+// MODELO: logros
+// FUNCIÓN: Sistema de medallas y logros para gamificación (REQ-38)
+// RELACIÓN PRD: REQ-38 (Medallas por logros)
+// SPRINT: Gamificación
+model logros {
+  id          String   @id @default(uuid())
+  nombre      String   // Nombre del logro (ej: "Primer Servicio", "Cliente Recurrente")
+  descripcion String   // Descripción del logro
+  icono       String   // Emoji o URL del icono
+  categoria   String   // "servicios", "resenas", "verificacion", "experiencia"
+  criterio    String   // Condición para obtener el logro (ej: "servicios_completados >= 1")
+  puntos      Int      @default(0) // Puntos que otorga el logro
+  activo      Boolean  @default(true)
+  creado_en   DateTime @default(now())
+
+  // Relación con logros obtenidos por usuarios
+  logros_usuario logros_usuario[]
+
+  @@index([categoria])
+  @@index([activo])
+}
+
+// MODELO: logros_usuario
+// FUNCIÓN: Registra qué logros ha obtenido cada usuario
+// RELACIÓN PRD: REQ-38 (Sistema de medallas)
+model logros_usuario {
+  id         String   @id @default(uuid())
+  usuario_id String
+  usuario    usuarios @relation(fields: [usuario_id], references: [id])
+  logro_id   String
+  logro      logros   @relation(fields: [logro_id], references: [id])
+  obtenido_en DateTime @default(now())
+
+  @@unique([usuario_id, logro_id]) // Un usuario solo puede obtener un logro una vez
+  @@index([usuario_id])
+  @@index([logro_id])
+}
+
+// ===== ADVANCED AVAILABILITY SYSTEM MODELS =====
+
+// MODELO: professionals_availability
+// FUNCIÓN: Gestión avanzada de disponibilidad con recurrencia y metadatos
+// CARACTERÍSTICAS: Recurrencia, reglas de negocio, metadatos JSONB, timezone handling
+model professionals_availability {
+  id                String   @id @default(uuid())
+  professional_id   String
+  professional      usuarios @relation("ProfessionalAvailability", fields: [professional_id], references: [id])
+
+  // Configuración básica de disponibilidad
+  title             String?  // Título descriptivo (ej: "Horario de mañana", "Disponibilidad general")
+  description       String? // Descripción detallada
+  is_active         Boolean  @default(true) // Si esta configuración está activa
+
+  // Configuración de recurrencia
+  recurrence_type   String   @default("none") // "none", "daily", "weekly", "monthly", "custom"
+  recurrence_config String?  // JSON con configuración específica de recurrencia
+
+  // Franja horaria base (para recurrencia)
+  start_date        DateTime // Fecha de inicio de la configuración
+  end_date          DateTime? // Fecha de fin (opcional, null = indefinido)
+
+  // Horarios base (se aplican según recurrencia)
+  start_time        String   // HH:MM format (hora local del profesional)
+  end_time          String   // HH:MM format (hora local del profesional)
+  duration_minutes  Int      @default(60) // Duración de cada slot en minutos
+
+  // Zona horaria y manejo DST
+  timezone          String   @default("America/Buenos_Aires") // IANA timezone identifier
+  dst_handling      String   @default("auto") // "auto", "manual", "ignore"
+
+  // Metadatos flexibles (JSONB)
+  meta              String?  // JSON con metadatos adicionales (reglas de negocio, excepciones, etc.)
+
+  // Campos de auditoría
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  created_by        String?  // ID del usuario que creó esta configuración
+
+  // Relaciones
+  generated_slots   availability_slots[] // Slots generados automáticamente
+  appointments      appointments[] // Citas asociadas a esta configuración
+
+  @@index([professional_id])
+  @@index([is_active])
+  @@index([start_date])
+  @@index([recurrence_type])
+  @@index([professional_id, is_active])
+  @@index([professional_id, start_date, end_date])
+}
+
+// MODELO: availability_slots
+// FUNCIÓN: Slots individuales generados desde configuraciones de disponibilidad
+// CARACTERÍSTICAS: Slots concretos con estado, reservas y metadatos
+model availability_slots {
+  id                String   @id @default(uuid())
+  professional_id   String
+  professional      usuarios @relation("AvailabilitySlotProfessional", fields: [professional_id], references: [id])
+
+  // Referencia a la configuración que generó este slot
+  availability_config_id String?
+  availability_config    professionals_availability? @relation(fields: [availability_config_id], references: [id])
+
+  // Información temporal (en UTC)
+  start_time        DateTime // Fecha y hora de inicio (UTC)
+  end_time          DateTime // Fecha y hora de fin (UTC)
+
+  // Información en zona horaria local
+  local_start_time  String   // HH:MM en zona horaria local
+  local_end_time    String   // HH:MM en zona horaria local
+  timezone          String   // Zona horaria del slot
+
+  // Estado del slot
+  status            String   @default("available") // "available", "booked", "blocked", "cancelled"
+  is_available      Boolean  @default(true) // Para compatibilidad con sistema existente
+
+  // Información de reserva
+  booked_by         String?  // ID del cliente que reservó
+  booked_by_user    usuarios? @relation("SlotBookedBy", fields: [booked_by], references: [id])
+  booked_at         DateTime? // Fecha y hora de la reserva
+
+  // Metadatos del slot
+  meta              String?  // JSON con metadatos específicos del slot
+
+  // Campos de auditoría
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  // Relaciones
+  appointment       appointments? // Cita asociada (si existe)
+
+  @@index([professional_id])
+  @@index([start_time])
+  @@index([status])
+  @@index([is_available])
+  @@index([professional_id, start_time])
+  @@index([professional_id, status])
+  @@index([availability_config_id])
+  @@unique([professional_id, start_time]) // Un profesional no puede tener dos slots al mismo tiempo
+}
+
+// MODELO: appointments
+// FUNCIÓN: Gestión completa de citas agendadas
+// CARACTERÍSTICAS: Workflow completo, estados, notificaciones, integración con servicios
+model appointments {
+  id                String   @id @default(uuid())
+
+  // Participantes
+  professional_id   String
+  professional      usuarios @relation("AppointmentProfessional", fields: [professional_id], references: [id])
+  client_id         String
+  client            usuarios @relation("AppointmentClient", fields: [client_id], references: [id])
+
+  // Slot asociado
+  slot_id           String?  @unique
+  slot              availability_slots? @relation(fields: [slot_id], references: [id])
+
+  // Configuración de disponibilidad que originó esta cita
+  availability_config_id String?
+  availability_config    professionals_availability? @relation(fields: [availability_config_id], references: [id])
+
+  // Información del servicio
+  service_id        String?  @unique // Referencia al servicio existente (para compatibilidad)
+  service           servicios? @relation(fields: [service_id], references: [id])
+
+  // Detalles de la cita
+  title             String   // Título de la cita
+  description       String?  // Descripción detallada
+  appointment_type  String   @default("service") // "service", "consultation", "meeting"
+
+  // Estado y workflow
+  status            String   @default("scheduled") // "scheduled", "confirmed", "in_progress", "completed", "cancelled", "no_show"
+  priority          String   @default("normal") // "low", "normal", "high", "urgent"
+
+  // Información temporal
+  scheduled_start   DateTime // Fecha y hora programada (UTC)
+  scheduled_end     DateTime // Fecha y hora de fin programada (UTC)
+  actual_start      DateTime? // Fecha y hora real de inicio
+  actual_end        DateTime? // Fecha y hora real de fin
+
+  // Zona horaria
+  timezone          String   @default("America/Buenos_Aires")
+
+  // Información adicional
+  notes             String?  // Notas internas del profesional
+  client_notes      String?  // Notas del cliente
+  price             Float?   // Precio acordado
+  currency          String   @default("ARS")
+
+  // Recordatorios y notificaciones
+  reminder_sent     Boolean  @default(false)
+  reminder_time     DateTime? // Cuándo se envió el recordatorio
+
+  // Integraciones externas
+  google_event_id   String?  @unique // ID del evento en Google Calendar
+  ical_uid          String?  @unique // UID para iCal
+
+  // Metadatos
+  meta              String?  // JSON con metadatos adicionales
+
+  // Campos de auditoría
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  created_by        String   // ID de quien creó la cita
+  cancelled_at      DateTime? // Fecha de cancelación
+  cancelled_by      String?  // ID de quien canceló
+  cancel_reason     String?  // Razón de la cancelación
+
+  @@index([professional_id])
+  @@index([client_id])
+  @@index([status])
+  @@index([scheduled_start])
+  @@index([professional_id, scheduled_start])
+  @@index([client_id, scheduled_start])
+  @@index([professional_id, status])
+  @@index([client_id, status])
+  @@index([slot_id])
+  @@index([service_id])
+  @@index([google_event_id])
+  @@index([ical_uid])
+}
+
+// MODELO: blocked_slots
+// FUNCIÓN: Bloqueo temporal de horarios por diversas razones
+// CARACTERÍSTICAS: Bloqueos masivos, recursivos, con razones y metadatos
+model blocked_slots {
+  id                String   @id @default(uuid())
+  professional_id   String
+  professional      usuarios @relation("BlockedSlotProfessional", fields: [professional_id], references: [id])
+
+  // Información del bloqueo
+  title             String   // Título del bloqueo
+  reason            String   // Razón del bloqueo ("vacation", "sick", "personal", "maintenance", etc.)
+  description       String?  // Descripción detallada
+
+  // Configuración temporal
+  start_time        DateTime // Fecha y hora de inicio del bloqueo (UTC)
+  end_time          DateTime // Fecha y hora de fin del bloqueo (UTC)
+
+  // Recurrencia del bloqueo
+  is_recurring      Boolean  @default(false)
+  recurrence_rule   String?  // Regla RRULE para recurrencia
+
+  // Zona horaria
+  timezone          String   @default("America/Buenos_Aires")
+
+  // Estado y control
+  is_active         Boolean  @default(true)
+  created_by        String   // ID de quien creó el bloqueo
+
+  // Metadatos
+  meta              String?  // JSON con metadatos adicionales
+
+  // Campos de auditoría
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@index([professional_id])
+  @@index([start_time])
+  @@index([end_time])
+  @@index([is_active])
+  @@index([professional_id, start_time, end_time])
+  @@index([professional_id, is_active])
+}
+
+// MODELO: concurrency_locks
+// FUNCIÓN: Sistema de bloqueo distribuido para prevenir condiciones de carrera
+// CARACTERÍSTICAS: Bloqueos con timeout automático, limpieza periódica
+model concurrency_locks {
+  id           String   @id @default(uuid())
+  resource_key String   // Hash de la clave del recurso
+  lock_id      String   // ID único del bloqueo
+  expires_at   DateTime // Fecha de expiración del bloqueo
+  created_at   DateTime @default(now())
+
+  @@unique([resource_key]) // Solo un bloqueo por recurso
+  @@index([expires_at])
+  @@index([created_at])
+}
+
+// MODELO: calendar_connections
+// FUNCIÓN: Gestiona conexiones de calendarios externos (Google Calendar, etc.)
+// CARACTERÍSTICAS: OAuth tokens, estado de sincronización, configuración por usuario
+model calendar_connections {
+  id               String   @id @default(uuid())
+  user_id          String   // FK que enlaza con usuarios.id
+  user             usuarios @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  calendar_type    String   // "google", "ical"
+  calendar_id      String   // ID del calendario externo
+  calendar_name    String?  // Nombre del calendario
+
+  // OAuth tokens (encriptados en producción)
+  access_token     String?
+  refresh_token    String?
+  token_expires_at DateTime?
+
+  // Estado de sincronización
+  is_active        Boolean  @default(true)
+  last_sync_at     DateTime?
+  sync_status      String   @default("pending") // "pending", "in_progress", "completed", "failed"
+
+  // Metadatos
+  meta             String?  // JSON con configuración adicional
+
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  // Relaciones
+  sync_logs        calendar_sync_logs[]
+
+  @@index([user_id])
+  @@index([calendar_type])
+  @@index([is_active])
+  @@index([sync_status])
+  @@unique([user_id, calendar_type, calendar_id]) // Un usuario solo puede tener una conexión por calendario
+}
+
+// MODELO: calendar_sync_logs
+// FUNCIÓN: Registra operaciones de sincronización y conflictos
+// CARACTERÍSTICAS: Historial de sync, resolución de conflictos, logging detallado
+model calendar_sync_logs {
+  id               String   @id @default(uuid())
+  user_id          String   // FK que enlaza con usuarios.id
+  user             usuarios @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  connection_id    String?  // FK que enlaza con calendar_connections.id
+  connection       calendar_connections? @relation(fields: [connection_id], references: [id])
+
+  operation        String   // "push", "pull", "sync"
+  status           String   // "success", "error", "conflict"
+  message          String?  // Mensaje descriptivo
+
+  // Datos de la operación
+  local_event_id   String?  // ID del evento local (appointment.id)
+  remote_event_id  String?  // ID del evento remoto (Google Calendar event ID)
+
+  // Resolución de conflictos
+  conflict_type    String?  // "time_overlap", "double_booking", etc.
+  conflict_data    String?  // JSON con detalles del conflicto
+  resolved         Boolean  @default(false)
+  resolved_at      DateTime?
+  resolution       String?  // "keep_local", "keep_remote", "merge", "manual"
+
+  created_at       DateTime @default(now())
+
+  @@index([user_id])
+  @@index([connection_id])
+  @@index([operation])
+  @@index([status])
+  @@index([resolved])
+}
+
+// MODELO: reputation_scores
+// FUNCIÓN: Almacena puntuaciones de reputación calculadas para profesionales
+// RELACIÓN PRD: REQ-39 (Ranking por reputación)
+// SPRINT: Verificación y confianza
+model reputation_scores {
+  id                String   @id @default(uuid())
+  usuario_id        String   @unique // FK que enlaza con usuarios.id (solo profesionales)
+  usuario           usuarios @relation(fields: [usuario_id], references: [id])
+
+  // Métricas calculadas
+  average_rating    Float    @default(0) // Promedio de calificaciones (1-5)
+  completed_jobs    Int      @default(0) // Número de servicios completados
+  on_time_percentage Float   @default(0) // Porcentaje de trabajos a tiempo (0-100)
+
+  // Campos para cálculo incremental
+  review_count      Int      @default(0) // Número total de reseñas
+  total_rating_sum  Float    @default(0) // Suma total de calificaciones
+  completed_jobs_count Int   @default(0) // Conteo de trabajos completados
+
+  // Puntuación calculada: (average_rating * 0.6) + (completed_jobs * 0.3) + (on_time_percentage * 0.1)
+  ranking_score     Float    @default(0)
+
+  // Ranking global (se actualiza periódicamente)
+  global_ranking    Int?     // Posición en el ranking global
+
+  // Última actualización
+  last_calculated   DateTime @default(now())
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@index([usuario_id])
+  @@index([ranking_score(sort: Desc)])
+  @@index([global_ranking])
+  @@index([last_calculated])
+}
+
+// MODELO: user_medals
+// FUNCIÓN: Registra medallas asignadas automáticamente a profesionales
+// RELACIÓN PRD: REQ-38 (Medallas por logros)
+// SPRINT: Verificación y confianza
+model user_medals {
+  id                String   @id @default(uuid())
+  usuario_id        String   // FK que enlaza con usuarios.id
+  usuario           usuarios @relation(fields: [usuario_id], references: [id])
+
+  medal_type        String   // "puntualidad", "calificaciones", "trabajos_completados", "verificado"
+  medal_name        String   // Nombre descriptivo de la medalla
+  medal_description String?  // Descripción de la medalla
+  icon_url          String?  // URL del icono de la medalla
+
+  // Condición que la otorgó
+  condition_value   Float?   // Valor que cumplió la condición (ej: 95.0 para puntualidad)
+  condition_type    String?  // Tipo de condición ("percentage", "count", "rating", "boolean")
+
+  // Estado
+  is_active         Boolean  @default(true) // Si la medalla sigue siendo válida
+  awarded_at        DateTime @default(now())
+  revoked_at        DateTime? // Si se revocó por no mantener la condición
+
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@unique([usuario_id, medal_type]) // Una medalla por tipo por usuario
+  @@index([usuario_id])
+  @@index([medal_type])
+  @@index([is_active])
+  @@index([awarded_at])
+}
+
+// MODELO: audit_logs
+// FUNCIÓN: Registra todas las operaciones de seguridad y auditoría para verificación de identidad y reputación
+// RELACIÓN PRD: Seguridad avanzada para verificación de identidad y reputación
+// SPRINT: Seguridad y cumplimiento
+model audit_logs {
+  id                String   @id @default(uuid())
+
+  // Usuario que realizó la acción
+  usuario_id        String?  // FK que enlaza con usuarios.id (puede ser null para acciones del sistema)
+  usuario           usuarios? @relation(fields: [usuario_id], references: [id])
+
+  // Acción realizada
+  accion            String   // "upload_document", "access_document", "approve_verification", "reject_verification", "view_reputation", "update_reputation"
+
+  // Entidad afectada
+  entidad_tipo      String   // "verification_request", "reputation_score", "user_medals"
+  entidad_id        String   // ID de la entidad afectada
+
+  // Detalles de la acción
+  detalles          String?  // JSON con detalles adicionales de la acción
+  ip_address        String?  // IP del usuario que realizó la acción
+  user_agent        String?  // User agent del navegador/dispositivo
+
+  // Resultado
+  exito             Boolean  @default(true) // Si la acción fue exitosa
+  error_mensaje     String?  // Mensaje de error si falló
+
+  // Timestamps
+  creado_en         DateTime @default(now())
+
+  @@index([usuario_id])
+  @@index([accion])
+  @@index([entidad_tipo, entidad_id])
+  @@index([creado_en])
+  @@index([exito])
+}
+
+// ===== URGENT SERVICES MODELS =====
+
+// MODELO: urgent_requests
+// FUNCIÓN: Gestiona solicitudes de servicios urgentes con soporte geoespacial
+// CARACTERÍSTICAS: PostGIS para ubicación, niveles de urgencia, asignación automática
+model urgent_requests {
+  id                    String   @id @default(uuid())
+  client_id             String
+  client                usuarios @relation("UrgentRequestClient", fields: [client_id], references: [id])
+
+  description           String
+  latitude              Float?   // Location coordinates for SQLite compatibility
+  longitude             Float?
+
+  requested_at          DateTime @default(now())
+  status                String   @default("pending") // "pending", "assigned", "in_progress", "completed", "cancelled"
+  urgency_level         String   @default("high") // "low", "medium", "high"
+
+  special_requirements  String?
+  estimated_budget      Float?
+  service_category      String?  // Service type/category
+
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  // Relations
+  candidates            urgent_request_candidates[]
+  assignments           urgent_assignments[]
+
+  @@index([client_id])
+  @@index([status], name: "idx_urgent_status")
+  @@index([urgency_level])
+  @@index([requested_at])
+  @@index([status, requested_at])
+}
+
+// MODELO: urgent_request_candidates
+// FUNCIÓN: Gestiona candidatos profesionales para solicitudes urgentes
+// CARACTERÍSTICAS: Cálculo de distancia, tiempos de respuesta, estado de contacto
+model urgent_request_candidates {
+  id                    String   @id @default(uuid())
+  urgent_request_id     String
+  urgent_request        urgent_requests @relation(fields: [urgent_request_id], references: [id])
+
+  professional_id       String
+  professional          usuarios @relation("UrgentCandidateProfessional", fields: [professional_id], references: [id])
+
+  distance              Float    // Distance in km
+  estimated_arrival_time Int     // Estimated arrival time in minutes
+
+  status                String   @default("available") // "available", "contacted", "accepted", "declined", "expired"
+  contacted_at          DateTime?
+  responded_at          DateTime?
+  response_time         Int?     // Response time in minutes
+
+  proposed_price        Float?
+  notes                 String?
+
+  created_at            DateTime @default(now())
+
+  @@index([urgent_request_id])
+  @@index([professional_id])
+  @@index([status])
+  @@index([distance], name: "idx_urgent_candidate_distance")
+  @@index([urgent_request_id, status])
+  @@index([professional_id, status])
+}
+
+// MODELO: urgent_assignments
+// FUNCIÓN: Registra asignaciones de servicios urgentes a profesionales
+// CARACTERÍSTICAS: Seguimiento de estado, tiempos de completación, precios finales
+model urgent_assignments {
+  id                    String   @id @default(uuid())
+  urgent_request_id     String   @unique
+  urgent_request        urgent_requests @relation(fields: [urgent_request_id], references: [id])
+
+  professional_id       String
+  professional          usuarios @relation("UrgentAssignmentProfessional", fields: [professional_id], references: [id])
+
+  assigned_at           DateTime @default(now())
+  status                String   @default("active") // "active", "in_progress", "completed", "cancelled"
+
+  started_at            DateTime?
+  completed_at          DateTime?
+  completion_time       Int?     // Completion time in minutes
+
+  final_price           Float?
+  notes                 String?
+
+  cancellation_reason   String?
+  cancelled_at          DateTime?
+
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  @@index([urgent_request_id])
+  @@index([professional_id])
+  @@index([status])
+  @@index([assigned_at])
+  @@index([professional_id, status])
+}
+
+// MODELO: urgent_pricing_rules
+// FUNCIÓN: Define reglas de precios para servicios urgentes por categoría y nivel de urgencia
+// CARACTERÍSTICAS: Multiplicadores de urgencia, precios base por categoría
+model urgent_pricing_rules {
+  id                    String   @id @default(uuid())
+  service_category      String  // "plomeria", "electricidad", "carpinteria", etc.
+  urgency_level         String   // "low", "medium", "high"
+
+  base_price            Float    // Base price for the service category
+  urgency_multiplier    Float    @default(1.0) // Multiplier for urgency level (1.2 for medium, 1.5 for high)
+
+  active                Boolean  @default(true)
+
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  @@unique([service_category, urgency_level])
+  @@index([service_category])
+  @@index([urgency_level])
+  @@index([active])
+}
+
+// ===== ADMIN MODULE MODELS =====
+
+// MODELO: admin_users
+// FUNCIÓN: Gestiona usuarios administradores con roles y permisos específicos
+// CARACTERÍSTICAS: Roles jerárquicos, permisos granulares, auditoría completa
+model admin_users {
+  id                    String   @id @default(uuid())
+  email                 String   @unique
+  hash_contrasena       String
+  nombre                String
+  apellido              String?
+  rol                   String   @default("moderator") // "super_admin", "admin", "moderator", "support"
+  permisos              String?  // JSON array de permisos específicos
+  esta_activo           Boolean  @default(true)
+  ultimo_acceso         DateTime?
+  intentos_fallidos     Int      @default(0)
+  bloqueado_hasta       DateTime?
+
+  // Campos de auditoría
+  creado_por            String?  // ID del admin que creó este usuario
+  creado_en             DateTime @default(now())
+  actualizado_en        DateTime @updatedAt
+
+  // Relaciones
+  admin_logs            admin_logs[]
+
+  @@index([rol])
+  @@index([esta_activo])
+  @@index([ultimo_acceso])
+  @@index([bloqueado_hasta])
+}
+
+// MODELO: categories
+// FUNCIÓN: Categoriza los servicios profesionales disponibles en la plataforma
+// CARACTERÍSTICAS: Jerarquía de categorías, estado activo/inactivo, metadatos
+model categories {
+  id                    String   @id @default(uuid())
+  nombre                String   @unique
+  descripcion           String?
+  icono                 String?  // URL del icono o emoji
+  color                 String?  // Color para UI
+  orden                 Int      @default(0) // Orden de visualización
+  esta_activa           Boolean  @default(true)
+  requiere_verificacion Boolean  @default(false) // Si requiere verificación especial
+
+  // Metadatos
+  meta                  String?  // JSON con metadatos adicionales
+
+  // Campos de auditoría
+  creado_por            String?  // ID del admin que creó
+  creado_en             DateTime @default(now())
+  actualizado_en        DateTime @updatedAt
+
+  // Relaciones
+  subcategories         subcategories[]
+
+  @@index([esta_activa])
+  @@index([orden])
+  @@index([requiere_verificacion])
+}
+
+// MODELO: subcategories
+// FUNCIÓN: Subcategorías dentro de las categorías principales
+// CARACTERÍSTICAS: Asociación con categoría padre, configuración específica
+model subcategories {
+  id                    String   @id @default(uuid())
+  category_id           String
+  category              categories @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  nombre                String
+  descripcion           String?
+  icono                 String?
+  color                 String?
+  orden                 Int      @default(0)
+  esta_activa           Boolean  @default(true)
+  requiere_verificacion Boolean  @default(false)
+
+  // Precios sugeridos
+  precio_minimo         Float?
+  precio_maximo         Float?
+  precio_sugerido       Float?
+
+  // Metadatos
+  meta                  String?
+
+  // Campos de auditoría
+  creado_por            String?
+  creado_en             DateTime @default(now())
+  actualizado_en        DateTime @updatedAt
+
+  @@unique([category_id, nombre])
+  @@index([category_id])
+  @@index([esta_activa])
+  @@index([orden])
+  @@index([requiere_verificacion])
+}
+
+// MODELO: reports
+// FUNCIÓN: Reportes administrativos y analíticos de la plataforma
+// CARACTERÍSTICAS: Tipos de reportes, parámetros, resultados en caché
+model reports {
+  id                    String   @id @default(uuid())
+  titulo                String
+  descripcion           String?
+  tipo                  String   // "financial", "user_activity", "service_stats", "security", "performance"
+
+  // Parámetros del reporte
+  parametros            String?  // JSON con parámetros del reporte
+  fecha_inicio          DateTime?
+  fecha_fin             DateTime?
+
+  // Resultados
+  resultado             String?  // JSON con los resultados del reporte
+  generado_en           DateTime?
+  expira_en             DateTime? // Cuándo expira el caché del reporte
+
+  // Estado
+  estado                String   @default("pending") // "pending", "generating", "completed", "failed"
+  error_mensaje         String?
+
+  // Campos de auditoría
+  generado_por          String?  // ID del admin que generó
+  creado_en             DateTime @default(now())
+  actualizado_en        DateTime @updatedAt
+
+  @@index([tipo])
+  @@index([estado])
+  @@index([generado_en])
+  @@index([expira_en])
+  @@index([generado_por])
+}
+
+// MODELO: admin_logs
+// FUNCIÓN: Registro detallado de todas las acciones administrativas
+// CARACTERÍSTICAS: Auditoría completa, trazabilidad, compliance
+model admin_logs {
+  id                    String   @id @default(uuid())
+
+  // Usuario admin que realizó la acción
+  admin_id              String
+  admin                 admin_users @relation(fields: [admin_id], references: [id])
+
+  // Acción realizada
+  accion                String   // "create_user", "update_category", "delete_report", "approve_verification", etc.
+  modulo                String   // "users", "categories", "reports", "financial", "security"
+
+  // Entidad afectada
+  entidad_tipo          String?  // "user", "category", "report", "payment", etc.
+  entidad_id            String?  // ID de la entidad afectada
+
+  // Detalles de la acción
+  descripcion           String   // Descripción legible de la acción
+  detalles              String?  // JSON con detalles técnicos
+  cambios               String?  // JSON con cambios before/after
+
+  // Contexto
+  ip_address            String?
+  user_agent            String?
+  session_id            String?
+
+  // Resultado
+  exito                 Boolean  @default(true)
+  error_mensaje         String?
+
+  // Timestamp
+  creado_en             DateTime @default(now())
+
+  @@index([admin_id])
+  @@index([accion])
+  @@index([modulo])
+  @@index([entidad_tipo, entidad_id])
+  @@index([creado_en])
+  @@index([exito])
+  @@index([ip_address])
+}

@@ -1,0 +1,416 @@
+/**
+ * @page ProfessionalDashboard - Dashboard principal para profesionales
+ * @descripción Panel de control completo para gestión profesional (REQ-06 a REQ-45)
+ * @sprint Sprint 2 – Dashboard y Gestión
+ * @tarjeta Tarjeta 3: [Frontend] Implementar Dashboard Profesional
+ * @impacto Social: Herramientas para que profesionales gestionen su negocio de triple impacto
+ */
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useOnboarding } from '../hooks/useOnboarding';
+import ProfilePicture from '../components/ProfilePicture';
+import Achievements from '../components/Achievements';
+import '../styles/onboarding.css';
+
+const ProfessionalDashboard = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { startOnboarding } = useOnboarding();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [stats, setStats] = useState({
+    totalServices: 0,
+    pendingQuotes: 0,
+    completedServices: 0,
+    totalEarnings: 0
+  });
+  const [recentActivity, setRecentActivity] = useState([]);
+
+  // Verificar permisos
+  useEffect(() => {
+    console.log('ProfessionalDashboard - User:', user);
+    console.log('ProfessionalDashboard - User role:', user?.role || user?.rol);
+    if (!user || (user.role !== 'profesional' && user.rol !== 'profesional')) {
+      console.log('ProfessionalDashboard - Redirecting because user is not profesional');
+      navigate('/');
+      return;
+    }
+    // Don't load data immediately, wait for user to be fully set
+    const timer = setTimeout(() => {
+      if (user && (user.role === 'profesional' || user.rol === 'profesional')) {
+        loadDashboardData();
+      }
+    }, 100); // Small delay to ensure user state is fully updated
+
+    return () => clearTimeout(timer);
+  }, [user, navigate]);
+
+  const loadDashboardData = async () => {
+    try {
+      console.log('Loading professional dashboard data for user:', user);
+      const token = sessionStorage.getItem('changanet_token');
+      console.log('Token from sessionStorage:', token ? 'present' : 'missing');
+
+      if (!token) {
+        console.log('No token found, skipping API calls');
+        return;
+      }
+
+      // Use correct backend URL
+      const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3003';
+      console.log('Using backend URL:', apiBaseUrl);
+
+      // Load real stats from API
+      const statsResponse = await fetch(`${apiBaseUrl}/api/professionals/stats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log('Professional stats response:', statsResponse.status);
+
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        console.log('Professional stats data:', statsData);
+        setStats(statsData.data || {
+          totalServices: 0,
+          pendingQuotes: 0,
+          completedServices: 0,
+          totalEarnings: 0
+        });
+      } else {
+        console.error('Failed to load professional stats:', statsResponse.status);
+        setStats({
+          totalServices: 0,
+          pendingQuotes: 0,
+          completedServices: 0,
+          totalEarnings: 0
+        });
+      }
+
+      // Load recent activity
+      const activityResponse = await fetch(`${apiBaseUrl}/api/professionals/activity`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log('Professional activity response:', activityResponse.status);
+
+      if (activityResponse.ok) {
+        const activityData = await activityResponse.json();
+        console.log('Professional activity data:', activityData);
+        setRecentActivity(activityData.data || []);
+      } else {
+        console.error('Failed to load professional activity:', activityResponse.status);
+        setRecentActivity([]);
+      }
+
+      // TODO: Uncomment when API endpoints are implemented
+      /*
+      // Cargar estadísticas
+      const statsResponse = await fetch('/api/professionals/stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log('Stats response:', statsResponse.status);
+
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        console.log('Stats data:', statsData);
+        setStats(statsData.data);
+      } else {
+        console.error('Failed to load stats:', statsResponse.status);
+      }
+
+      // Cargar actividad reciente
+      const activityResponse = await fetch('/api/professionals/activity', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log('Activity response:', activityResponse.status);
+
+      if (activityResponse.ok) {
+        const activityData = await activityResponse.json();
+        console.log('Activity data:', activityData);
+        setRecentActivity(activityData.data);
+      } else {
+        console.error('Failed to load activity:', activityResponse.status);
+      }
+      */
+    } catch (error) {
+      console.error('Error cargando datos del dashboard:', error);
+    }
+  };
+
+  const tabs = [
+    { id: 'overview', name: 'Resumen', icon: '📊' },
+    { id: 'profile', name: 'Mi Perfil', icon: '👤' },
+    { id: 'services', name: 'Mis Servicios', icon: '🔧' },
+    { id: 'quotes', name: 'Cotizaciones', icon: '💰' },
+    { id: 'messages', name: 'Mensajes', icon: '💬' },
+    { id: 'schedule', name: 'Mi Agenda', icon: '📅' },
+    { id: 'achievements', name: 'Logros', icon: '🏆' },
+    { id: 'verification', name: 'Verificación', icon: '✅' },
+    { id: 'payments', name: 'Pagos', icon: '💳' }
+  ];
+
+  // Función para iniciar onboarding manualmente (para testing)
+  const handleStartOnboarding = () => {
+    startOnboarding('profesional');
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return (
+          <div className="space-y-6">
+            {/* Estadísticas principales */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="flex items-center">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <span className="text-2xl">🔧</span>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Servicios Totales</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.totalServices}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="flex items-center">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <span className="text-2xl">⏳</span>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Cotizaciones Pendientes</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.pendingQuotes}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="flex items-center">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <span className="text-2xl">✅</span>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Servicios Completados</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.completedServices}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="flex items-center">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <span className="text-2xl">💰</span>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Ganancias Totales</p>
+                    <p className="text-2xl font-bold text-gray-900">${stats.totalEarnings}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actividad reciente */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Actividad Reciente</h3>
+              <div className="space-y-4">
+                {recentActivity.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No hay actividad reciente</p>
+                ) : (
+                  recentActivity.map((activity, index) => (
+                    <div key={index} className="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-sm">📋</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{activity.description}</p>
+                          <p className="text-xs text-gray-500">{activity.timestamp}</p>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        activity.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {activity.status}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'profile':
+        return (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Mi Perfil Profesional</h3>
+            <button
+              onClick={() => navigate('/mi-perfil-profesional')}
+              className="bg-[#E30613] text-white px-4 py-2 rounded-lg hover:bg-[#C9050F] transition-colors"
+            >
+              Editar Perfil
+            </button>
+          </div>
+        );
+
+      case 'services':
+        return (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Mis Servicios</h3>
+            <button
+              onClick={() => navigate('/profesional/servicios')}
+              className="bg-[#E30613] text-white px-4 py-2 rounded-lg hover:bg-[#C9050F] transition-colors"
+            >
+              Gestionar Servicios
+            </button>
+          </div>
+        );
+
+      case 'quotes':
+        return (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Cotizaciones Recibidas</h3>
+            <button
+              onClick={() => navigate('/profesional/cotizaciones')}
+              className="bg-[#E30613] text-white px-4 py-2 rounded-lg hover:bg-[#C9050F] transition-colors"
+            >
+              Gestionar Cotizaciones
+            </button>
+          </div>
+        );
+
+      case 'messages':
+        return (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Mensajes de Clientes</h3>
+            <p className="text-gray-600 mb-4">Responde a consultas y coordina servicios</p>
+            <button
+              onClick={() => navigate('/profesional/mensajes')}
+              className="bg-[#E30613] text-white px-4 py-2 rounded-lg hover:bg-[#C9050F] transition-colors"
+            >
+              Ver Mensajes
+            </button>
+          </div>
+        );
+
+      case 'schedule':
+        return (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Mi Agenda</h3>
+            <button
+              onClick={() => navigate('/availability')}
+              className="bg-[#E30613] text-white px-4 py-2 rounded-lg hover:bg-[#C9050F] transition-colors"
+            >
+              Gestionar Disponibilidad
+            </button>
+          </div>
+        );
+
+      case 'achievements':
+        return <Achievements />;
+
+      case 'verification':
+        return (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Verificación de Identidad</h3>
+            <button
+              onClick={() => navigate('/verify-identity')}
+              className="bg-[#E30613] text-white px-4 py-2 rounded-lg hover:bg-[#C9050F] transition-colors"
+            >
+              Gestionar Verificación
+            </button>
+          </div>
+        );
+
+      case 'payments':
+        return (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Historial de Pagos</h3>
+            <button
+              onClick={() => navigate('/profesional/pagos')}
+              className="bg-[#E30613] text-white px-4 py-2 rounded-lg hover:bg-[#C9050F] transition-colors"
+            >
+              Ver Pagos
+            </button>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  if (!user || (user.role !== 'profesional' && user.rol !== 'profesional')) {
+    console.log('ProfessionalDashboard - Not rendering because user is not profesional:', user);
+    return null; // No renderizar si no es profesional
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8" id="professional-dashboard-header">
+          <div className="flex items-center space-x-4 mb-4">
+            <ProfilePicture 
+              user={user}
+              size="w-16 h-16"
+              className="border-4 border-emerald-200 shadow-lg"
+            />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Dashboard Profesional</h1>
+              <p className="mt-1 text-gray-600">
+                ¡Hola, {user.nombre || user.name || 'Profesional'}! Bienvenido a tu panel profesional. Gestiona tus servicios y cotizaciones.
+              </p>
+            </div>
+          </div>
+          {/* Botón para testing - remover en producción */}
+          {import.meta.env.DEV && (
+            <button
+              onClick={handleStartOnboarding}
+              className="mt-2 px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+            >
+              🔄 Reiniciar Onboarding
+            </button>
+          )}
+        </div>
+
+        {/* Tabs */}
+        <div className="mb-6" id="professional-dashboard-tabs">
+          <nav className="flex space-x-1 bg-white p-1 rounded-lg shadow">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-[#E30613] text-white'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <span className="mr-2">{tab.icon}</span>
+                {tab.name}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-6">
+          {renderTabContent()}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProfessionalDashboard;

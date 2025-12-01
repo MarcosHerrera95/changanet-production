@@ -1,0 +1,137 @@
+/**
+ * TOKENS DE COLOR OFICIALES CHANGÁNET
+ * 
+ * Este archivo contiene la paleta de colores institucional oficial.
+ * NO modificar sin autorización del equipo de diseño.
+ * 
+ * Última actualización: 2025-11-21
+ */
+
+:root {
+  /* ========================================
+     COLORES PRIMARIOS
+     ======================================== */
+  --primary: #E30613;
+  --primary-hover: #C9050F;
+  --primary-light: rgba(227, 6, 19, 0.1);
+  --primary-shadow: rgba(227, 6, 19, 0.3);
+
+  /* ========================================
+     COLORES DE TEXTO
+     ======================================== */
+  --text-main: #343A40;
+  --text-secondary: #6C757D;
+  --text-tertiary: #ADB5BD;
+  --text-white: #FFFFFF;
+
+  /* ========================================
+     ESTADOS
+     ======================================== */
+  --success: #28A745;
+  --success-light: #10B981;
+  --success-bg: rgba(40, 167, 69, 0.1);
+  --success-border: rgba(40, 167, 69, 0.3);
+
+  --warning: #FFC107;
+  --warning-bg: rgba(255, 193, 7, 0.1);
+  --warning-border: rgba(255, 193, 7, 0.3);
+
+  --error: #DC3545;
+  --error-bg: rgba(220, 53, 69, 0.1);
+  --error-border: rgba(220, 53, 69, 0.3);
+
+  --info: #3B82F6;
+  --info-bg: rgba(59, 130, 246, 0.1);
+  --info-border: rgba(59, 130, 246, 0.3);
+
+  /* ========================================
+     ESCALA DE GRISES
+     ======================================== */
+  --gray-50: #F8F9FA;
+  --gray-100: #E9ECEF;
+  --gray-200: #DEE2E6;
+  --gray-300: #CED4DA;
+  --gray-400: #ADB5BD;
+  --gray-500: #6C757D;
+  --gray-600: #495057;
+  --gray-700: #343A40;
+  --gray-800: #212529;
+
+  /* ========================================
+     FONDOS Y SUPERFICIES
+     ======================================== */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8F9FA;
+  --bg-tertiary: #E9ECEF;
+
+  /* ========================================
+     BORDES
+     ======================================== */
+  --border-light: #DEE2E6;
+  --border-medium: #CED4DA;
+  --border-dark: #ADB5BD;
+
+  /* ========================================
+     SOMBRAS
+     ======================================== */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 20px rgba(227, 6, 19, 0.3);
+  --shadow-glow-hover: 0 0 30px rgba(227, 6, 19, 0.5);
+
+  /* ========================================
+     ESTADOS DE COTIZACIÓN (UNIFICADOS)
+     ======================================== */
+  --quote-pending: var(--warning);
+  --quote-pending-bg: var(--warning-bg);
+  --quote-pending-border: var(--warning-border);
+
+  --quote-in-progress: var(--info);
+  --quote-in-progress-bg: var(--info-bg);
+  --quote-in-progress-border: var(--info-border);
+
+  --quote-accepted: var(--success);
+  --quote-accepted-bg: var(--success-bg);
+  --quote-accepted-border: var(--success-border);
+
+  --quote-rejected: var(--error);
+  --quote-rejected-bg: var(--error-bg);
+  --quote-rejected-border: var(--error-border);
+
+  /* ========================================
+     TRANSICIONES
+     ======================================== */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 300ms ease-in-out;
+  --transition-slow: 500ms ease-in-out;
+
+  /* ========================================
+     FOCUS STATES (ACCESIBILIDAD)
+     ======================================== */
+  --focus-ring: 0 0 0 3px rgba(227, 6, 19, 0.1);
+  --focus-outline: 3px solid var(--primary);
+}
+
+/* ========================================
+   MODO ALTO CONTRASTE
+   ======================================== */
+@media (prefers-contrast: high) {
+  :root {
+    --text-secondary: #495057;
+    --text-tertiary: #6C757D;
+    --border-light: #ADB5BD;
+  }
+}
+
+/* ========================================
+   MODO REDUCCIÓN DE MOVIMIENTO
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0ms;
+    --transition-base: 0ms;
+    --transition-slow: 0ms;
+  }
+}

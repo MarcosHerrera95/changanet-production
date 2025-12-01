@@ -1,0 +1,191 @@
+/**
+ * Estilos personalizados para el onboarding con driver.js
+ * Cumple con estándares de accesibilidad WCAG 2.1 AA
+ */
+
+/* Overlay personalizado con mejor contraste */
+.driver-popover {
+  background: rgba(0, 0, 0, 0.8) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Títulos con mejor legibilidad */
+.driver-popover .driver-popover-title {
+  color: #ffffff !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  margin-bottom: 8px !important;
+  line-height: 1.4 !important;
+}
+
+/* Descripciones con tamaño de fuente accesible */
+.driver-popover .driver-popover-description {
+  color: #f8f9fa !important;
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+  margin-bottom: 16px !important;
+}
+
+/* Botones con tamaño mínimo accesible */
+.driver-popover .driver-popover-next-btn,
+.driver-popover .driver-popover-prev-btn,
+.driver-popover .driver-popover-close-btn {
+  min-width: 44px !important;
+  min-height: 44px !important;
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border: 2px solid transparent !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Botón siguiente */
+.driver-popover .driver-popover-next-btn {
+  background: #10b981 !important;
+  color: #ffffff !important;
+}
+
+.driver-popover .driver-popover-next-btn:hover {
+  background: #059669 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Botón anterior */
+.driver-popover .driver-popover-prev-btn {
+  background: #6b7280 !important;
+  color: #ffffff !important;
+}
+
+.driver-popover .driver-popover-prev-btn:hover {
+  background: #4b5563 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Botón cerrar */
+.driver-popover .driver-popover-close-btn {
+  background: transparent !important;
+  color: #d1d5db !important;
+  border: 2px solid #d1d5db !important;
+}
+
+.driver-popover .driver-popover-close-btn:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Indicador de progreso */
+.driver-popover .driver-popover-progress {
+  margin-top: 16px !important;
+}
+
+.driver-popover .driver-popover-progress-text {
+  color: #e5e7eb !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+/* Barra de progreso */
+.driver-popover .driver-popover-progress-bar {
+  height: 4px !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 2px !important;
+  margin-top: 8px !important;
+}
+
+.driver-popover .driver-popover-progress-bar-fill {
+  background: #10b981 !important;
+  border-radius: 2px !important;
+  transition: width 0.3s ease !important;
+}
+
+/* Flecha del popover */
+.driver-popover .driver-popover-arrow {
+  color: rgba(0, 0, 0, 0.8) !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)) !important;
+}
+
+/* Estados de foco para accesibilidad */
+.driver-popover .driver-popover-next-btn:focus,
+.driver-popover .driver-popover-prev-btn:focus,
+.driver-popover .driver-popover-close-btn:focus {
+  outline: 3px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5) !important;
+}
+
+/* Animaciones suaves */
+.driver-popover {
+  animation: fadeIn 0.3s ease-out !important;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respuesta móvil */
+@media (max-width: 768px) {
+  .driver-popover {
+    max-width: 90vw !important;
+    margin: 0 16px !important;
+  }
+
+  .driver-popover .driver-popover-title {
+    font-size: 16px !important;
+  }
+
+  .driver-popover .driver-popover-description {
+    font-size: 14px !important;
+  }
+
+  .driver-popover .driver-popover-next-btn,
+  .driver-popover .driver-popover-prev-btn,
+  .driver-popover .driver-popover-close-btn {
+    min-width: 40px !important;
+    min-height: 40px !important;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* Alto contraste para usuarios con necesidades especiales */
+@media (prefers-contrast: high) {
+  .driver-popover {
+    background: rgba(0, 0, 0, 0.95) !important;
+    border: 2px solid #ffffff !important;
+  }
+
+  .driver-popover .driver-popover-title,
+  .driver-popover .driver-popover-description {
+    color: #ffffff !important;
+  }
+
+  .driver-popover .driver-popover-next-btn,
+  .driver-popover .driver-popover-prev-btn,
+  .driver-popover .driver-popover-close-btn {
+    border-width: 3px !important;
+  }
+}
+
+/* Modo oscuro del sistema */
+@media (prefers-color-scheme: dark) {
+  .driver-popover .driver-popover-description {
+    color: #f9fafb !important;
+  }
+
+  .driver-popover .driver-popover-close-btn {
+    color: #d1d5db !important;
+    border-color: #d1d5db !important;
+  }
+}

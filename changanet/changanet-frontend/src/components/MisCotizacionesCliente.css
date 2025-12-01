@@ -1,0 +1,511 @@
+/* MisCotizacionesCliente.css - Estilos para el componente de cotizaciones del cliente */
+
+/* Botón principal para abrir el panel */
+.btn-mis-cotizaciones {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-mis-cotizaciones:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.btn-mis-cotizaciones:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Panel de cotizaciones (reemplaza modal overlay) */
+.panel-cotizaciones {
+  margin-top: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal overlay (mantenido para compatibilidad futura) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Panel content */
+.panel-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 100%;
+  width: 100%;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Modal content */
+.modal-content {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-details {
+  max-width: 600px;
+}
+
+/* Modal header */
+.modal-header {
+  padding: 24px 32px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  position: relative;
+}
+
+.modal-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.modal-subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.btn-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-close:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+/* Modal body */
+.modal-body {
+  padding: 24px 32px;
+}
+
+/* Secciones de cotizaciones */
+.cotizaciones-section {
+  margin-bottom: 32px;
+}
+
+.cotizaciones-section h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+/* Lista de cotizaciones */
+.cotizaciones-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Tarjeta de cotización */
+.cotizacion-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.cotizacion-card:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.cotizacion-info {
+  flex: 1;
+}
+
+.servicio-titulo {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.cliente-info {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Estados */
+.estado-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.estado-badge.pendiente {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.estado-badge.enviada {
+  background-color: var(--success-bg);
+  color: var(--success);
+}
+
+.estado-badge.aceptada {
+  background-color: var(--success-bg);
+  color: var(--success);
+}
+
+.estado-badge.rechazada {
+  background-color: var(--error-bg);
+  color: var(--error);
+}
+
+/* Botón ver detalles */
+.btn-ver-detalles {
+  background: var(--info);
+  color: var(--text-white);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 16px;
+}
+
+.btn-ver-detalles:hover {
+  background: var(--primary);
+  transform: translateY(-1px);
+}
+
+.btn-ver-detalles:focus {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+
+/* Mensaje cuando no hay cotizaciones */
+.no-cotizaciones {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 32px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 2px dashed #e5e7eb;
+}
+
+/* Modal footer */
+.modal-footer {
+  padding: 16px 32px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Botones principales */
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+/* Secciones de detalles */
+.detalles-section {
+  margin-bottom: 24px;
+}
+
+.detalles-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 4px;
+}
+
+/* Grid de información */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.info-grid p {
+  margin: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+/* Descripción */
+.descripcion {
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+  line-height: 1.6;
+  color: #374151;
+}
+
+/* Grid de imágenes */
+.imagenes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.imagen-servicio {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Sección de oferta */
+.oferta-section {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #0ea5e9;
+}
+
+.oferta-info p {
+  margin: 8px 0;
+  color: #0c4a6e;
+}
+
+.comentarios {
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+  border-left: 3px solid #0ea5e9;
+  font-style: italic;
+}
+
+/* Acciones de cotización */
+.acciones-cotizacion {
+  display: flex;
+  gap: 12px;
+  margin-right: auto;
+}
+
+.btn-rechazar {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-rechazar:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.btn-aceptar {
+  background: #16a34a;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-aceptar:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    margin: 20px;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .cotizacion-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .btn-ver-detalles {
+    margin-left: 0;
+    align-self: stretch;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .acciones-cotizacion {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .acciones-cotizacion button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-header h2 {
+    font-size: 20px;
+  }
+
+  .cotizaciones-section h3 {
+    font-size: 18px;
+  }
+
+  .servicio-titulo {
+    font-size: 16px;
+  }
+}
+
+/* Focus styles para accesibilidad */
+.btn-mis-cotizaciones:focus,
+.btn-ver-detalles:focus,
+.btn-secondary:focus,
+.btn-rechazar:focus,
+.btn-aceptar:focus,
+.btn-close:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .modal-content {
+    border: 2px solid #000;
+  }
+
+  .cotizacion-card {
+    border: 2px solid #000;
+  }
+
+  .estado-badge {
+    border: 1px solid #000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal-content,
+  .btn-mis-cotizaciones,
+  .btn-ver-detalles,
+  .btn-secondary,
+  .btn-rechazar,
+  .btn-aceptar {
+    animation: none;
+    transition: none;
+  }
+
+  .cotizacion-card {
+    transition: none;
+  }
+}

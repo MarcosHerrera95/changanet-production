@@ -1,0 +1,2076 @@
+openapi: 3.0.3
+info:
+  title: Changánet API - Gestión de Perfiles Profesionales
+  description: |
+    Documentación completa de la API de Changánet con énfasis en Gestión de Perfiles Profesionales.
+
+    ## 🎯 Funcionalidades Implementadas
+
+    ### Autenticación y Usuarios
+    - ✅ Registro de usuarios (clientes y profesionales)
+    - ✅ Autenticación JWT con tokens de acceso y refresco
+    - ✅ Verificación de email y recuperación de contraseña
+    - ✅ Autenticación OAuth (Google, Facebook)
+    - ✅ Rate limiting y protección contra ataques
+
+    ### 👷 Gestión de Perfiles Profesionales (REQ-06 a REQ-15)
+    - ✅ **REQ-06**: Subida de foto de perfil y portada (Cloudinary/S3)
+    - ✅ **REQ-07**: Selección múltiple de especialidades (array JSON)
+    - ✅ **REQ-08**: Validación de años de experiencia (0-50 años)
+    - ✅ **REQ-09**: Zona de cobertura geográfica con coordenadas GPS
+    - ✅ **REQ-10**: Sistema flexible de tarifas (hora/servicio/convenio)
+    - ✅ **REQ-11**: Búsqueda por especialidad con filtros avanzados
+    - ✅ **REQ-12**: Filtro por zona/barrio de cobertura
+    - ✅ **REQ-13**: Filtro por rango de precios
+    - ✅ **REQ-14**: Ordenamiento por calificación, precio, distancia
+    - ✅ **REQ-15**: Paginación y resultados optimizados
+
+    ### 🛡️ Características de Seguridad
+    - Sanitización completa de datos (XSS/SQL injection prevention)
+    - Validación profunda con Joi schemas
+    - Autenticación JWT obligatoria para operaciones sensibles
+    - Rate limiting por endpoint
+    - Logs de seguridad y auditoría
+    - Regla RB-01: Un profesional = un perfil activo
+
+    ## 🔄 Flujos Principales
+
+    ### Creación de Perfil Profesional
+    ```
+    POST /auth/register (rol: profesional)
+    → POST /auth/verify → POST /api/professionals
+    → POST /api/professionals/upload-photo → Perfil Completo
+    ```
+
+    ### Búsqueda de Profesionales
+    ```
+    GET /api/professionals?especialidad=Plomero&zona_cobertura=Palermo
+    → Lista filtrada con paginación → GET /api/professionals/{id}
+    → Perfil público detallado
+    ```
+
+    ### Actualización de Perfil
+    ```
+    PUT /api/profile (cliente) o PUT /api/professionals/{id} (profesional)
+    → Validaciones REQ-06-10 → Perfil actualizado
+    ```
+  version: 1.0.0
+  contact:
+    name: Changánet Support
+    email: support@changánet.com
+
+servers:
+  - url: http://localhost:3002/api
+    description: Servidor de desarrollo
+  - url: https://api.changánet.com/api
+    description: Servidor de producción
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Autenticación
+    description: Endpoints de registro, login y gestión de sesiones
+  - name: Perfiles Profesionales
+    description: Gestión completa de perfiles profesionales (REQ-06 a REQ-10)
+  - name: OAuth
+    description: Autenticación con proveedores externos
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Autenticación
+      summary: Registrar nuevo usuario
+      description: |
+        Registra un nuevo usuario en el sistema. Soporta registro de clientes y profesionales.
+
+        **Validaciones implementadas:**
+        - Email único en el sistema
+        - Contraseña con fortaleza mínima (score >= 30)
+        - Rol válido (cliente/profesional)
+        - Rate limiting: máximo 3 registros por hora por IP
+
+        **Flujo posterior:**
+        - Se envía email de verificación automáticamente
+        - Usuario debe verificar email antes de poder hacer login
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              cliente:
+                summary: Registro de cliente
+                value:
+                  name: "María González"
+                  email: "maria.gonzalez@email.com"
+                  password: "SecurePass123!"
+                  rol: "cliente"
+              profesional:
+                summary: Registro de profesional
+                value:
+                  name: "Carlos Rodríguez"
+                  email: "carlos.prof@email.com"
+                  password: "ProfSecure456!"
+                  rol: "profesional"
+      responses:
+        '201':
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+              examples:
+                success:
+                  summary: Registro exitoso
+                  value:
+                    message: "Usuario registrado exitosamente. Revisa tu email para verificar la cuenta."
+                    accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    refreshToken: "refresh_token_here"
+                    user:
+                      id: "uuid-here"
+                      nombre: "María González"
+                      email: "maria.gonzalez@email.com"
+                      rol: "cliente"
+                    requiresVerification: true
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                weak_password:
+                  summary: Contraseña débil
+                  value:
+                    error: "La contraseña no cumple con los requisitos de seguridad."
+                    details:
+                      score: 25
+                      warnings: ["La contraseña debe tener al menos 10 caracteres"]
+                      suggestions: ["Usa una combinación de letras, números y símbolos"]
+                invalid_role:
+                  summary: Rol inválido
+                  value:
+                    error: "Rol inválido. Use 'cliente' o 'profesional'."
+        '409':
+          description: Email ya registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                email_exists:
+                  summary: Email duplicado
+                  value:
+                    error: "El email ya está registrado."
+        '429':
+          description: Rate limit excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rate_limit:
+                  summary: Demasiados intentos
+                  value:
+                    error: "Has excedido el límite de registros. Inténtalo de nuevo en 1 hora."
+                    retryAfter: 3600
+
+  /auth/login:
+    post:
+      tags:
+        - Autenticación
+      summary: Iniciar sesión
+      description: |
+        Autentica un usuario con email y contraseña.
+
+        **Características de seguridad:**
+        - Bloqueo por intentos fallidos (5 intentos → 15 min bloqueo)
+        - Rate limiting: máximo 5 logins por hora por IP
+        - Validación de contraseña con bcrypt
+        - Logging de intentos fallidos por IP y email
+        - Soporte para usuarios OAuth (sin contraseña local)
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              valid_login:
+                summary: Login válido
+                value:
+                  email: "maria.gonzalez@email.com"
+                  password: "SecurePass123!"
+              google_user:
+                summary: Usuario de Google (sin contraseña local)
+                value:
+                  email: "usuario@gmail.com"
+                  password: "any_password"
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+              examples:
+                success:
+                  summary: Login exitoso
+                  value:
+                    message: "Login exitoso."
+                    accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    refreshToken: "refresh_token_here"
+                    user:
+                      id: "uuid-here"
+                      nombre: "María González"
+                      email: "maria.gonzalez@email.com"
+                      rol: "cliente"
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_credentials:
+                  summary: Credenciales incorrectas
+                  value:
+                    error: "Credenciales inválidas."
+                google_user:
+                  summary: Usuario de Google
+                  value:
+                    error: "Credenciales inválidas."
+                    isGoogleUser: true
+        '429':
+          description: Cuenta bloqueada por intentos fallidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                account_locked:
+                  summary: Cuenta bloqueada
+                  value:
+                    error: "Cuenta bloqueada por múltiples intentos fallidos."
+                    message: "Demasiados intentos fallidos. Inténtalo de nuevo en 15 minutos."
+                    retryAfter: 900
+
+  /auth/verify:
+    post:
+      tags:
+        - Autenticación
+      summary: Verificar email
+      description: |
+        Verifica la dirección de email del usuario usando un token enviado por correo.
+
+        **Proceso:**
+        - Token generado durante registro
+        - Expira en 24 horas
+        - Un solo uso (se elimina después de verificar)
+        - Marca usuario como verificado
+      operationId: verifyEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRequest'
+            examples:
+              verify:
+                summary: Verificación de email
+                value:
+                  token: "abc123def456..."
+      responses:
+        '200':
+          description: Email verificado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyResponse'
+              examples:
+                success:
+                  summary: Verificación exitosa
+                  value:
+                    message: "Email verificado exitosamente"
+                    user:
+                      id: "uuid-here"
+                      nombre: "María González"
+                      email: "maria.gonzalez@email.com"
+                      rol: "cliente"
+                      esta_verificado: true
+        '400':
+          description: Token inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_token:
+                  summary: Token inválido
+                  value:
+                    error: "Token de verificación inválido"
+                expired_token:
+                  summary: Token expirado
+                  value:
+                    error: "Token de verificación expirado"
+
+  /auth/refresh:
+    post:
+      tags:
+        - Autenticación
+      summary: Renovar token de acceso
+      description: |
+        Genera un nuevo token de acceso usando un refresh token válido.
+
+        **Características:**
+        - Refresh token tiene expiración de 7 días
+        - Access token expira en 15 minutos
+        - Refresh token se almacena hasheado en BD
+        - Un refresh token por usuario activo
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+            examples:
+              refresh:
+                summary: Renovación de token
+                value:
+                  refreshToken: "refresh_token_here"
+      responses:
+        '200':
+          description: Token renovado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+              examples:
+                success:
+                  summary: Token renovado
+                  value:
+                    message: "Token renovado exitosamente"
+                    accessToken: "new_access_token_here"
+        '400':
+          description: Refresh token requerido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Refresh token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_token:
+                  summary: Token inválido
+                  value:
+                    error: "Refresh token inválido"
+
+  /auth/logout:
+    post:
+      tags:
+        - Autenticación
+      summary: Cerrar sesión
+      description: |
+        Revoca el refresh token actual, cerrando la sesión del usuario.
+
+        **Proceso:**
+        - Verifica validez del refresh token
+        - Elimina el hash del refresh token de la BD
+        - Usuario debe hacer login nuevamente
+      operationId: logoutUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+            examples:
+              logout:
+                summary: Cerrar sesión
+                value:
+                  refreshToken: "refresh_token_here"
+      responses:
+        '200':
+          description: Logout exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+              examples:
+                success:
+                  summary: Sesión cerrada
+                  value:
+                    message: "Logout exitoso"
+        '400':
+          description: Refresh token requerido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Refresh token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - Autenticación
+      summary: Solicitar recuperación de contraseña
+      description: |
+        Inicia el proceso de recuperación de contraseña enviando un email con token.
+
+        **Características:**
+        - Rate limiting: máximo 3 solicitudes por hora por IP
+        - Token expira en 1 hora
+        - Respuesta genérica por seguridad (no revela si email existe)
+        - Logging de solicitudes para auditoría
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+            examples:
+              forgot:
+                summary: Solicitud de recuperación
+                value:
+                  email: "maria.gonzalez@email.com"
+      responses:
+        '200':
+          description: Solicitud procesada (siempre devuelve este código por seguridad)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForgotPasswordResponse'
+              examples:
+                success:
+                  summary: Solicitud enviada
+                  value:
+                    message: "Si el email existe, se enviará un enlace de recuperación."
+        '400':
+          description: Email requerido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rate_limit:
+                  summary: Demasiadas solicitudes
+                  value:
+                    error: "Límite de envío de emails excedido."
+                    message: "Puedes solicitar otro enlace de recuperación en 1 hora."
+                    retryAfter: 3600
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Autenticación
+      summary: Restablecer contraseña
+      description: |
+        Restablece la contraseña del usuario usando el token de recuperación.
+
+        **Validaciones:**
+        - Token válido y no expirado
+        - Nueva contraseña cumple requisitos de fortaleza
+        - Token de un solo uso (se elimina después)
+        - Rate limiting heredado del login
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+            examples:
+              reset:
+                summary: Restablecer contraseña
+                value:
+                  token: "reset_token_here"
+                  newPassword: "NewSecurePass123!"
+      responses:
+        '200':
+          description: Contraseña restablecida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResetPasswordResponse'
+              examples:
+                success:
+                  summary: Contraseña cambiada
+                  value:
+                    message: "Contraseña restablecida exitosamente"
+        '400':
+          description: Datos inválidos o token expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_token:
+                  summary: Token inválido
+                  value:
+                    error: "Token inválido"
+                expired_token:
+                  summary: Token expirado
+                  value:
+                    error: "Token expirado"
+                weak_password:
+                  summary: Contraseña débil
+                  value:
+                    error: "La nueva contraseña no cumple con los requisitos de seguridad."
+                    details:
+                      score: 25
+                      warnings: ["La contraseña debe tener al menos 10 caracteres"]
+                      suggestions: ["Usa una combinación de letras, números y símbolos"]
+
+  /auth/oauth/{provider}:
+    get:
+      tags:
+        - OAuth
+      summary: Iniciar autenticación OAuth
+      description: |
+        Inicia el flujo de autenticación OAuth con proveedores externos.
+
+        **Proveedores soportados:**
+        - Google: perfil y email
+        - Facebook: email
+
+        **Flujo:**
+        1. Redirecciona a proveedor OAuth
+        2. Usuario autoriza aplicación
+        3. Callback procesa tokens
+        4. Usuario creado/verificado automáticamente
+      operationId: oauthLogin
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, facebook]
+          description: Proveedor OAuth
+          examples:
+            google:
+              summary: Google OAuth
+              value: google
+            facebook:
+              summary: Facebook OAuth
+              value: facebook
+      responses:
+        '302':
+          description: Redirección a proveedor OAuth
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL de autorización del proveedor
+        '400':
+          description: Proveedor no soportado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/oauth/{provider}/callback:
+    get:
+      tags:
+        - OAuth
+      summary: Callback de OAuth
+      description: |
+        Procesa la respuesta del proveedor OAuth y completa la autenticación.
+
+        **Proceso:**
+        - Recibe código de autorización
+        - Intercambia por tokens de acceso
+        - Obtiene información del usuario
+        - Crea/verifica usuario en BD
+        - Genera tokens JWT
+        - Redirecciona a frontend con tokens
+      operationId: oauthCallback
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, facebook]
+          description: Proveedor OAuth
+      responses:
+        '302':
+          description: Redirección exitosa al frontend
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL del frontend con tokens JWT
+              example: "http://localhost:5173/auth/callback?token=jwt_token&user=user_data"
+        '500':
+          description: Error interno en OAuth
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                oauth_error:
+                  summary: Error en OAuth
+                  value:
+                    error: "Error procesando autenticación OAuth"
+
+  /auth/google-login:
+    post:
+      tags:
+        - OAuth
+      summary: Login directo con Google (desde frontend)
+      description: |
+        Endpoint alternativo para login con Google usando tokens del frontend.
+
+        **Ventajas:**
+        - Evita redirecciones
+        - Mejor UX móvil
+        - Control total del flujo
+        - Rate limiting aplicado
+      operationId: googleLoginDirect
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleLoginRequest'
+            examples:
+              google_login:
+                summary: Login con Google
+                value:
+                  uid: "google_user_id"
+                  email: "usuario@gmail.com"
+                  nombre: "Juan Pérez"
+                  foto: "https://lh3.googleusercontent.com/photo.jpg"
+                  rol: "cliente"
+      responses:
+        '200':
+          description: Login exitoso con Google
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+              examples:
+                success:
+                  summary: Login Google exitoso
+                  value:
+                    message: "Login exitoso con Google"
+                    accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    refreshToken: "refresh_token_here"
+                    user:
+                      id: "uuid-here"
+                      nombre: "Juan Pérez"
+                      email: "usuario@gmail.com"
+                      rol: "cliente"
+                      esta_verificado: true
+                      url_foto_perfil: "https://lh3.googleusercontent.com/photo.jpg"
+        '400':
+          description: Datos de Google inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    get:
+      tags:
+        - Autenticación
+      summary: Obtener datos del usuario actual
+      description: |
+        Retorna la información del usuario actualmente autenticado.
+
+        **Requiere:**
+        - Token JWT válido en header Authorization
+        - Usuario existente en BD
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Datos del usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              examples:
+                user_data:
+                  summary: Datos del usuario
+                  value:
+                    user:
+                      id: "uuid-here"
+                      nombre: "María González"
+                      email: "maria.gonzalez@email.com"
+                      rol: "cliente"
+                      esta_verificado: true
+                      url_foto_perfil: "https://example.com/photo.jpg"
+        '401':
+          description: Token inválido o faltante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+/professionals:
+   post:
+     tags:
+       - Perfiles Profesionales
+     summary: Crear perfil profesional
+     description: |
+       Crea un nuevo perfil profesional completo con validaciones profundas.
+
+       **REQ-06 a REQ-10 Implementados:**
+       - ✅ REQ-06: Subida de foto de perfil y portada (Cloudinary)
+       - ✅ REQ-07: Selección múltiple de especialidades (array JSON)
+       - ✅ REQ-08: Validación de años de experiencia (0-50)
+       - ✅ REQ-09: Zona de cobertura geográfica con coordenadas GPS
+       - ✅ REQ-10: Sistema flexible de tarifas (hora/servicio/convenio)
+
+       **Regla de Negocio RB-01:** Un profesional = un perfil activo
+     operationId: createProfessionalProfile
+     security:
+       - bearerAuth: []
+     requestBody:
+       required: true
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/ProfessionalProfileRequest'
+           examples:
+             complete_profile:
+               summary: Perfil profesional completo
+               value:
+                 especialidades: ["Plomero", "Electricista"]
+                 anos_experiencia: 5
+                 zona_cobertura: "Buenos Aires, Palermo"
+                 latitud: -34.6037
+                 longitud: -58.3816
+                 tipo_tarifa: "hora"
+                 tarifa_hora: 1500.00
+                 descripcion: "Especialista en instalaciones eléctricas y plomería con 5 años de experiencia"
+                 esta_disponible: true
+     responses:
+       '201':
+         description: Perfil profesional creado exitosamente
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ProfessionalProfileResponse'
+             examples:
+               success:
+                 summary: Creación exitosa
+                 value:
+                   success: true
+                   message: "Perfil profesional creado exitosamente"
+                   profile:
+                     usuario_id: "uuid-here"
+                     especialidades: ["Plomero", "Electricista"]
+                     anos_experiencia: 5
+                     zona_cobertura: "Buenos Aires, Palermo"
+                     tipo_tarifa: "hora"
+                     tarifa_hora: 1500.00
+                     descripcion: "Especialista en instalaciones..."
+                     esta_disponible: true
+       '400':
+         description: Datos de validación incorrectos
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ValidationErrorResponse'
+             examples:
+               validation_error:
+                 summary: Error de validación
+                 value:
+                   error: "Datos de validación incorrectos"
+                   details:
+                     - field: "especialidades"
+                       message: "Debe seleccionar al menos una especialidad"
+                     - field: "anos_experiencia"
+                       message: "Los años de experiencia deben ser mayor o igual a 0"
+       '401':
+         description: Token de autenticación requerido
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+       '409':
+         description: Usuario ya tiene perfil profesional
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+             examples:
+               profile_exists:
+                 summary: Perfil ya existe
+                 value:
+                   error: "El usuario ya tiene un perfil profesional activo"
+                   code: "PROFILE_EXISTS"
+
+   put:
+     tags:
+       - Perfiles Profesionales
+     summary: Actualizar perfil profesional específico
+     description: |
+       Actualiza un perfil profesional existente con validaciones completas.
+
+       **Permisos:** Solo el propietario del perfil o administradores pueden actualizar.
+       **Validaciones:** Todas las reglas REQ-06 a REQ-10 aplican.
+     operationId: updateProfessionalProfile
+     security:
+       - bearerAuth: []
+     parameters:
+       - name: id
+         in: path
+         required: true
+         schema:
+           type: string
+           format: uuid
+         description: ID del usuario profesional
+         example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+     requestBody:
+       required: true
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/ProfessionalProfileRequest'
+     responses:
+       '200':
+         description: Perfil actualizado exitosamente
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ProfessionalProfileResponse'
+       '403':
+         description: Sin permisos para actualizar este perfil
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+             examples:
+               insufficient_permissions:
+                 summary: Sin permisos
+                 value:
+                   error: "No tienes permisos para actualizar este perfil"
+                   code: "INSUFFICIENT_PERMISSIONS"
+       '404':
+         description: Perfil profesional no encontrado
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+
+   get:
+     tags:
+       - Perfiles Profesionales
+     summary: Buscar profesionales con filtros
+     description: |
+       Busca profesionales con filtros avanzados y paginación.
+
+       **REQ-11 a REQ-15 Implementados:**
+       - ✅ REQ-11: Filtro por especialidad
+       - ✅ REQ-12: Filtro por zona/barrio
+       - ✅ REQ-13: Filtro por rango de precio
+       - ✅ REQ-14: Ordenamiento por calificación, precio, etc.
+       - ✅ REQ-15: Paginación y resultados optimizados
+     operationId: searchProfessionals
+     parameters:
+       - name: zona_cobertura
+         in: query
+         schema:
+           type: string
+         description: Zona de cobertura (búsqueda parcial)
+         example: "Palermo"
+       - name: especialidad
+         in: query
+         schema:
+           type: string
+         description: Especialidad a buscar
+         example: "Plomero"
+       - name: precio_min
+         in: query
+         schema:
+           type: number
+         description: Precio mínimo por hora
+         example: 1000
+       - name: precio_max
+         in: query
+         schema:
+           type: number
+         description: Precio máximo por hora
+         example: 2000
+       - name: sort_by
+         in: query
+         schema:
+           type: string
+           enum: [calificacion_promedio, tarifa_hora, distancia, disponibilidad]
+           default: calificacion_promedio
+         description: Campo para ordenar resultados
+       - name: page
+         in: query
+         schema:
+           type: integer
+           minimum: 1
+           default: 1
+         description: Número de página
+       - name: limit
+         in: query
+         schema:
+           type: integer
+           minimum: 1
+           maximum: 100
+           default: 10
+         description: Resultados por página
+     responses:
+       '200':
+         description: Lista de profesionales encontrados
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ProfessionalsSearchResponse'
+             examples:
+               search_results:
+                 summary: Resultados de búsqueda
+                 value:
+                   professionals:
+                     - usuario_id: "uuid-1"
+                       usuario:
+                         nombre: "Carlos Rodríguez"
+                         url_foto_perfil: "https://cloudinary.com/photo1.jpg"
+                       especialidad: "Plomero"
+                       zona_cobertura: "Buenos Aires, Palermo"
+                       tarifa_hora: 1500
+                       calificacion_promedio: 4.5
+                       descripcion: "Especialista en plomería"
+                   total: 25
+                   page: 1
+                   totalPages: 3
+                   hasNext: true
+                   hasPrev: false
+
+/professionals/{id}:
+   get:
+     tags:
+       - Perfiles Profesionales
+     summary: Obtener perfil profesional público
+     description: |
+       Obtiene el perfil público de un profesional específico.
+
+       **REQ-07, REQ-09:** Muestra especialidad y zona de cobertura pública.
+       **Caché:** Resultados cacheados para optimización de rendimiento.
+     operationId: getProfessionalProfile
+     parameters:
+       - name: id
+         in: path
+         required: true
+         schema:
+           type: string
+           format: uuid
+         description: ID del profesional
+         example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+     responses:
+       '200':
+         description: Perfil profesional encontrado
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ProfessionalProfile'
+       '404':
+         description: Profesional no encontrado
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+
+/professionals/upload-photo:
+   post:
+     tags:
+       - Perfiles Profesionales
+     summary: Subir foto de perfil o portada
+     description: |
+       Sube una imagen para foto de perfil o portada del profesional.
+
+       **REQ-06 Implementado:**
+       - ✅ Validación de tipo de archivo (JPG, PNG, WebP)
+       - ✅ Límite de tamaño (5MB máximo)
+       - ✅ Optimización automática con Cloudinary
+       - ✅ Almacenamiento seguro con respaldo S3
+     operationId: uploadProfessionalPhoto
+     security:
+       - bearerAuth: []
+     requestBody:
+       required: true
+       content:
+         multipart/form-data:
+           schema:
+             type: object
+             required:
+               - foto
+               - foto_tipo
+             properties:
+               foto:
+                 type: string
+                 format: binary
+                 description: Archivo de imagen a subir
+               foto_tipo:
+                 type: string
+                 enum: [perfil, portada]
+                 description: Tipo de foto a actualizar
+                 example: "perfil"
+     responses:
+       '200':
+         description: Foto subida exitosamente
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/PhotoUploadResponse'
+             examples:
+               success:
+                 summary: Subida exitosa
+                 value:
+                   success: true
+                   message: "Foto de perfil subida exitosamente"
+                   data:
+                     url: "https://cloudinary.com/changanet/profiles/user123_123456.jpg"
+                     type: "perfil"
+       '400':
+         description: Error en la subida de foto
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/ErrorResponse'
+             examples:
+               invalid_file:
+                 summary: Archivo inválido
+                 value:
+                   error: "Tipo de archivo no permitido. Solo se aceptan imágenes JPG, PNG y WebP"
+                   code: "INVALID_FILE_TYPE"
+               file_too_large:
+                 summary: Archivo demasiado grande
+                 value:
+                   error: "El archivo es demasiado grande. Máximo 5MB permitido"
+                   code: "FILE_TOO_LARGE"
+
+/search:
+ get:
+   tags:
+     - Búsqueda y Filtros
+   summary: Buscar profesionales con filtros avanzados
+   description: |
+     Busca profesionales usando algoritmos avanzados de búsqueda y filtrado.
+
+     **REQ-11 a REQ-15 Implementados:**
+     - ✅ **REQ-11**: Búsqueda full-text por especialidades y descripción
+     - ✅ **REQ-12**: Filtros por especialidad, ciudad, barrio y radio geoespacial
+     - ✅ **REQ-13**: Filtro por rango de precios flexible
+     - ✅ **REQ-14**: Ordenamiento por relevancia, calificación, distancia, precio
+     - ✅ **REQ-15**: Paginación optimizada y estadísticas calculadas
+
+     **Características técnicas:**
+     - Motor de búsqueda PostGIS para consultas geoespaciales precisas
+     - Búsqueda full-text con relevancia usando PostgreSQL tsvector
+     - Caché Redis para optimización de rendimiento
+     - Rate limiting por endpoint
+     - Logging completo para monitoreo
+   operationId: searchProfessionals
+   parameters:
+     - name: q
+       in: query
+       schema:
+         type: string
+         minLength: 2
+         maxLength: 100
+       description: Término de búsqueda full-text (especialidades, descripción)
+       example: "plomero electricista"
+     - name: specialty
+       in: query
+       schema:
+         type: string
+         minLength: 2
+         maxLength: 50
+       description: Filtro por especialidad específica
+       example: "Plomero"
+     - name: city
+       in: query
+       schema:
+         type: string
+         minLength: 2
+         maxLength: 50
+       description: Filtro por ciudad
+       example: "Buenos Aires"
+     - name: district
+       in: query
+       schema:
+         type: string
+         minLength: 2
+         maxLength: 50
+       description: Filtro por barrio/distrito
+       example: "Palermo"
+     - name: lat
+       in: query
+       schema:
+         type: number
+         minimum: -90
+         maximum: 90
+       description: Latitud del usuario para cálculos de distancia
+       example: -34.6037
+     - name: lng
+       in: query
+       schema:
+         type: number
+         minimum: -180
+         maximum: 180
+       description: Longitud del usuario para cálculos de distancia
+       example: -58.3816
+     - name: radius
+       in: query
+       schema:
+         type: number
+         minimum: 1
+         maximum: 100
+       description: Radio de búsqueda en kilómetros (requiere lat/lng)
+       example: 10
+     - name: minPrice
+       in: query
+       schema:
+         type: number
+         minimum: 0
+         maximum: 100000
+       description: Precio mínimo por hora/servicio
+       example: 1000
+     - name: maxPrice
+       in: query
+       schema:
+         type: number
+         minimum: 0
+         maximum: 100000
+       description: Precio máximo por hora/servicio
+       example: 5000
+     - name: orderBy
+       in: query
+       schema:
+         type: string
+         enum: [relevance, rating, distance, price, availability]
+         default: relevance
+       description: Criterio de ordenamiento
+       example: "rating"
+     - name: page
+       in: query
+       schema:
+         type: integer
+         minimum: 1
+         default: 1
+       description: Número de página
+       example: 1
+     - name: limit
+       in: query
+       schema:
+         type: integer
+         minimum: 1
+         maximum: 100
+         default: 10
+       description: Resultados por página
+       example: 20
+   responses:
+     '200':
+       description: Resultados de búsqueda encontrados
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/SearchResponse'
+           examples:
+             search_results:
+               summary: Resultados de búsqueda exitosa
+               value:
+                 professionals:
+                   - id: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                     name: "Carlos Rodríguez"
+                     email: "carlos@email.com"
+                     specialty: "Plomero"
+                     specialties: ["Plomero", "Electricista"]
+                     experience_years: 5
+                     coverage_area: "Buenos Aires, Palermo"
+                     latitude: -34.6037
+                     longitude: -58.3816
+                     rate_type: "hora"
+                     hourly_rate: 1500
+                     description: "Especialista en plomería"
+                     profile_photo_url: "https://cloudinary.com/photo.jpg"
+                     is_available: true
+                     average_rating: 4.5
+                     verification_status: "verificado"
+                     total_reviews: 23
+                     completed_services: 45
+                     distance_km: 2.3
+                     relevance_score: 0.85
+                 total: 156
+                 page: 1
+                 limit: 10
+                 totalPages: 16
+     '400':
+       description: Parámetros de búsqueda inválidos
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/ErrorResponse'
+           examples:
+             invalid_params:
+               summary: Parámetros inválidos
+               value:
+                 error: "Parámetro orderBy inválido. Opciones válidas: relevance, rating, distance, price, availability."
+             radius_without_coords:
+               summary: Radio sin coordenadas
+               value:
+                 error: "Para usar filtro de radio, debe proporcionar lat y lng."
+     '429':
+       description: Rate limit excedido
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/ErrorResponse'
+           examples:
+             rate_limit:
+               summary: Demasiadas búsquedas
+               value:
+                 error: "Demasiadas búsquedas. Inténtalo de nuevo en un minuto."
+                 code: "RATE_LIMIT_EXCEEDED"
+
+/search/autocomplete:
+ get:
+   tags:
+     - Búsqueda y Filtros
+   summary: Autocompletado para especialidades y ubicaciones
+   description: |
+     Proporciona sugerencias de autocompletado para mejorar la experiencia de búsqueda.
+
+     **Funcionalidades:**
+     - Sugerencias de especialidades más populares
+     - Sugerencias de ciudades con más profesionales
+     - Sugerencias de barrios/distritos
+     - Resultados ordenados por frecuencia de uso
+     - Rate limiting permisivo para buena UX
+   operationId: autocompleteSearch
+   parameters:
+     - name: q
+       in: query
+       required: true
+       schema:
+         type: string
+         minLength: 2
+         maxLength: 50
+       description: Término de búsqueda (mínimo 2 caracteres)
+       example: "plom"
+     - name: type
+       in: query
+       schema:
+         type: string
+         enum: [all, specialties, cities, districts]
+         default: all
+       description: Tipo de sugerencias a obtener
+       example: "specialties"
+     - name: limit
+       in: query
+       schema:
+         type: integer
+         minimum: 1
+         maximum: 20
+         default: 10
+       description: Número máximo de sugerencias por tipo
+       example: 5
+   responses:
+     '200':
+       description: Sugerencias de autocompletado
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/AutocompleteResponse'
+           examples:
+             all_suggestions:
+               summary: Todas las sugerencias
+               value:
+                 specialties:
+                   - value: "Plomero"
+                     count: 45
+                   - value: "Electricista"
+                     count: 32
+                 cities:
+                   - value: "Buenos Aires"
+                     count: 156
+                   - value: "Córdoba"
+                     count: 89
+                 districts:
+                   - value: "Palermo"
+                     count: 67
+                   - value: "Belgrano"
+                     count: 43
+     '400':
+       description: Parámetros inválidos
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/ErrorResponse'
+           examples:
+             query_too_short:
+               summary: Búsqueda demasiado corta
+               value:
+                 error: "Se requiere un término de búsqueda de al menos 2 caracteres."
+     '429':
+       description: Rate limit excedido
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/ErrorResponse'
+           examples:
+             rate_limit:
+               summary: Demasiadas solicitudes
+               value:
+                 error: "Demasiadas solicitudes de autocompletado."
+                 code: "RATE_LIMIT_EXCEEDED"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT de acceso obtenido en login/register
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+        - rol
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          description: Nombre completo del usuario
+          example: "María González"
+        email:
+          type: string
+          format: email
+          description: Email único del usuario
+          example: "maria.gonzalez@email.com"
+        password:
+          type: string
+          minLength: 10
+          description: Contraseña con requisitos de seguridad
+          example: "SecurePass123!"
+        rol:
+          type: string
+          enum: [cliente, profesional]
+          description: Rol del usuario en la plataforma
+          example: "cliente"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email del usuario
+          example: "maria.gonzalez@email.com"
+        password:
+          type: string
+          description: Contraseña del usuario
+          example: "SecurePass123!"
+
+    VerifyRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: Token de verificación enviado por email
+          example: "abc123def456ghi789"
+
+    RefreshRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          description: Token de refresco JWT
+          example: "refresh_token_here"
+
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email para recuperación de contraseña
+          example: "maria.gonzalez@email.com"
+
+    ResetPasswordRequest:
+      type: object
+      required:
+        - token
+        - newPassword
+      properties:
+        token:
+          type: string
+          description: Token de recuperación enviado por email
+          example: "reset_token_here"
+        newPassword:
+          type: string
+          minLength: 10
+          description: Nueva contraseña segura
+          example: "NewSecurePass123!"
+
+    GoogleLoginRequest:
+      type: object
+      required:
+        - uid
+        - email
+        - nombre
+      properties:
+        uid:
+          type: string
+          description: ID único de Google
+          example: "123456789012345678901"
+        email:
+          type: string
+          format: email
+          description: Email de Google
+          example: "usuario@gmail.com"
+        nombre:
+          type: string
+          description: Nombre completo
+          example: "Juan Pérez"
+        foto:
+          type: string
+          format: uri
+          description: URL de la foto de perfil de Google
+          example: "https://lh3.googleusercontent.com/photo.jpg"
+        rol:
+          type: string
+          enum: [cliente, profesional]
+          default: cliente
+          description: Rol asignado (default cliente)
+          example: "cliente"
+
+    AuthSuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Mensaje de éxito
+          example: "Usuario registrado exitosamente. Revisa tu email para verificar la cuenta."
+        accessToken:
+          type: string
+          description: Token JWT de acceso (15 min)
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          description: Token de refresco (7 días)
+          example: "refresh_token_here"
+        user:
+          $ref: '#/components/schemas/UserData'
+        requiresVerification:
+          type: boolean
+          description: Indica si el usuario necesita verificar email
+          example: true
+
+    VerifyResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Email verificado exitosamente"
+        user:
+          $ref: '#/components/schemas/UserData'
+
+    RefreshResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Token renovado exitosamente"
+        accessToken:
+          type: string
+          description: Nuevo token de acceso
+          example: "new_access_token_here"
+
+    LogoutResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Logout exitoso"
+
+    ForgotPasswordResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Si el email existe, se enviará un enlace de recuperación."
+
+    ResetPasswordResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Contraseña restablecida exitosamente"
+
+    UserResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserData'
+
+    UserData:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID único del usuario
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        nombre:
+          type: string
+          description: Nombre completo del usuario
+          example: "María González"
+        email:
+          type: string
+          format: email
+          description: Email del usuario
+          example: "maria.gonzalez@email.com"
+        rol:
+          type: string
+          enum: [cliente, profesional, admin]
+          description: Rol del usuario
+          example: "cliente"
+        esta_verificado:
+          type: boolean
+          description: Estado de verificación del email
+          example: true
+        url_foto_perfil:
+          type: string
+          format: uri
+          description: URL de la foto de perfil
+          example: "https://example.com/photo.jpg"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Mensaje de error
+          example: "Credenciales inválidas."
+        message:
+          type: string
+          description: Mensaje adicional opcional
+          example: "Demasiados intentos fallidos. Inténtalo de nuevo en 15 minutos."
+        details:
+          type: object
+          description: Detalles adicionales del error
+          example:
+            score: 25
+            warnings: ["La contraseña debe tener al menos 10 caracteres"]
+            suggestions: ["Usa una combinación de letras, números y símbolos"]
+        isGoogleUser:
+          type: boolean
+          description: Indica si es usuario de Google sin contraseña local
+          example: true
+        retryAfter:
+          type: integer
+          description: Segundos para reintentar (para rate limiting)
+          example: 900
+
+    ProfessionalProfileRequest:
+      type: object
+      required:
+        - especialidades
+        - anos_experiencia
+        - zona_cobertura
+        - tipo_tarifa
+        - descripcion
+      properties:
+        especialidades:
+          type: array
+          items:
+            type: string
+            minLength: 2
+            maxLength: 100
+          minItems: 1
+          maxItems: 10
+          description: Array de especialidades del profesional (REQ-07)
+          example: ["Plomero", "Electricista"]
+        anos_experiencia:
+          type: integer
+          minimum: 0
+          maximum: 50
+          description: Años de experiencia profesional (REQ-08)
+          example: 5
+        zona_cobertura:
+          type: string
+          minLength: 3
+          maxLength: 255
+          description: Zona geográfica de cobertura (REQ-09)
+          example: "Buenos Aires, Palermo"
+        latitud:
+          type: number
+          minimum: -90
+          maximum: 90
+          description: Coordenada GPS latitud (opcional)
+          example: -34.6037
+        longitud:
+          type: number
+          minimum: -180
+          maximum: 180
+          description: Coordenada GPS longitud (opcional)
+          example: -58.3816
+        tipo_tarifa:
+          type: string
+          enum: [hora, servicio, convenio]
+          description: Tipo de tarifa a aplicar (REQ-10)
+          example: "hora"
+        tarifa_hora:
+          type: number
+          minimum: 0
+          maximum: 100000
+          description: Tarifa por hora en pesos (requerido si tipo_tarifa = "hora")
+          example: 1500.00
+        tarifa_servicio:
+          type: number
+          minimum: 0
+          maximum: 1000000
+          description: Tarifa por servicio completo (requerido si tipo_tarifa = "servicio")
+          example: 5000.00
+        tarifa_convenio:
+          type: string
+          minLength: 3
+          maxLength: 500
+          description: Descripción para tarifa a convenir (requerido si tipo_tarifa = "convenio")
+          example: "Precio según complejidad del trabajo - consultar presupuesto"
+        descripcion:
+          type: string
+          minLength: 10
+          maxLength: 1000
+          description: Descripción detallada de servicios y experiencia
+          example: "Especialista en instalaciones eléctricas y plomería con 5 años de experiencia"
+        esta_disponible:
+          type: boolean
+          default: true
+          description: Disponibilidad general del profesional
+          example: true
+
+    ProfessionalProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Perfil profesional actualizado exitosamente"
+        profile:
+          $ref: '#/components/schemas/ProfessionalProfile'
+
+    ProfessionalProfile:
+      type: object
+      properties:
+        usuario_id:
+          type: string
+          format: uuid
+          description: ID único del usuario
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        usuario:
+          type: object
+          properties:
+            nombre:
+              type: string
+              example: "Carlos Rodríguez"
+            email:
+              type: string
+              format: email
+              example: "carlos@email.com"
+            telefono:
+              type: string
+              example: "+54911234567"
+            esta_verificado:
+              type: boolean
+              example: true
+        especialidad:
+          type: string
+          description: Especialidad principal (compatibilidad)
+          example: "Plomero"
+        especialidades:
+          type: array
+          items:
+            type: string
+          description: Array completo de especialidades (REQ-07)
+          example: ["Plomero", "Electricista"]
+        anos_experiencia:
+          type: integer
+          example: 5
+        zona_cobertura:
+          type: string
+          example: "Buenos Aires, Palermo"
+        latitud:
+          type: number
+          example: -34.6037
+        longitud:
+          type: number
+          example: -58.3816
+        tipo_tarifa:
+          type: string
+          enum: [hora, servicio, convenio]
+          example: "hora"
+        tarifa_hora:
+          type: number
+          example: 1500.00
+        tarifa_servicio:
+          type: number
+          example: 5000.00
+        tarifa_convenio:
+          type: string
+          example: "Precio a convenir según trabajo"
+        descripcion:
+          type: string
+          example: "Especialista en instalaciones eléctricas y plomería"
+        url_foto_perfil:
+          type: string
+          format: uri
+          example: "https://cloudinary.com/changanet/profiles/user123.jpg"
+        url_foto_portada:
+          type: string
+          format: uri
+          example: "https://cloudinary.com/changanet/profiles/covers/user123.jpg"
+        esta_disponible:
+          type: boolean
+          example: true
+        calificacion_promedio:
+          type: number
+          minimum: 0
+          maximum: 5
+          example: 4.5
+        estado_verificacion:
+          type: string
+          enum: [pendiente, verificado, rechazado]
+          example: "verificado"
+
+    ProfessionalsSearchResponse:
+      type: object
+      properties:
+        professionals:
+          type: array
+          items:
+            type: object
+            properties:
+              usuario_id:
+                type: string
+                format: uuid
+                example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+              usuario:
+                type: object
+                properties:
+                  nombre:
+                    type: string
+                    example: "Carlos Rodríguez"
+                  url_foto_perfil:
+                    type: string
+                    format: uri
+                    example: "https://cloudinary.com/photo.jpg"
+              especialidad:
+                type: string
+                example: "Plomero"
+              zona_cobertura:
+                type: string
+                example: "Buenos Aires, Palermo"
+              tarifa_hora:
+                type: number
+                example: 1500
+              calificacion_promedio:
+                type: number
+                example: 4.5
+              descripcion:
+                type: string
+                example: "Especialista en plomería"
+        total:
+          type: integer
+          description: Total de profesionales encontrados
+          example: 25
+        page:
+          type: integer
+          description: Página actual
+          example: 1
+        totalPages:
+          type: integer
+          description: Total de páginas
+          example: 3
+        hasNext:
+          type: boolean
+          description: Indica si hay página siguiente
+          example: true
+        hasPrev:
+          type: boolean
+          description: Indica si hay página anterior
+          example: false
+
+    PhotoUploadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Foto de perfil subida exitosamente"
+        data:
+          type: object
+          properties:
+            url:
+              type: string
+              format: uri
+              example: "https://cloudinary.com/changanet/profiles/user123_123456.jpg"
+            type:
+              type: string
+              enum: [perfil, portada]
+              example: "perfil"
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Datos de validación incorrectos"
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "especialidades"
+              message:
+                type: string
+                example: "Debe seleccionar al menos una especialidad"
+              value:
+                description: Valor que causó el error
+        code:
+          type: string
+          example: "VALIDATION_ERROR"
+
+    SearchResponse:
+      type: object
+      properties:
+        professionals:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchProfessional'
+        total:
+          type: integer
+          description: Total de profesionales encontrados
+          example: 156
+        page:
+          type: integer
+          description: Página actual
+          example: 1
+        limit:
+          type: integer
+          description: Resultados por página
+          example: 10
+        totalPages:
+          type: integer
+          description: Total de páginas disponibles
+          example: 16
+
+    SearchProfessional:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID único del profesional
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        name:
+          type: string
+          description: Nombre del profesional
+          example: "Carlos Rodríguez"
+        email:
+          type: string
+          format: email
+          description: Email del profesional
+          example: "carlos@email.com"
+        specialty:
+          type: string
+          description: Especialidad principal
+          example: "Plomero"
+        specialties:
+          type: array
+          items:
+            type: string
+          description: Array completo de especialidades
+          example: ["Plomero", "Electricista"]
+        experience_years:
+          type: integer
+          description: Años de experiencia
+          example: 5
+        coverage_area:
+          type: string
+          description: Zona de cobertura
+          example: "Buenos Aires, Palermo"
+        latitude:
+          type: number
+          description: Coordenada GPS latitud
+          example: -34.6037
+        longitude:
+          type: number
+          description: Coordenada GPS longitud
+          example: -58.3816
+        rate_type:
+          type: string
+          enum: [hora, servicio, convenio]
+          description: Tipo de tarifa
+          example: "hora"
+        hourly_rate:
+          type: number
+          description: Tarifa por hora
+          example: 1500
+        service_rate:
+          type: number
+          description: Tarifa por servicio
+          example: 5000
+        custom_rate:
+          type: string
+          description: Descripción para tarifa a convenir
+          example: "Precio a convenir"
+        description:
+          type: string
+          description: Descripción del profesional
+          example: "Especialista en plomería con 5 años de experiencia"
+        profile_photo_url:
+          type: string
+          format: uri
+          description: URL de la foto de perfil
+          example: "https://cloudinary.com/photo.jpg"
+        cover_photo_url:
+          type: string
+          format: uri
+          description: URL de la foto de portada
+          example: "https://cloudinary.com/cover.jpg"
+        is_available:
+          type: boolean
+          description: Disponibilidad del profesional
+          example: true
+        average_rating:
+          type: number
+          minimum: 0
+          maximum: 5
+          description: Calificación promedio
+          example: 4.5
+        verification_status:
+          type: string
+          enum: [pendiente, verificado, rechazado]
+          description: Estado de verificación
+          example: "verificado"
+        verified_at:
+          type: string
+          format: date-time
+          description: Fecha de verificación
+          example: "2025-11-28T15:30:00Z"
+        total_reviews:
+          type: integer
+          description: Total de reseñas
+          example: 23
+        completed_services:
+          type: integer
+          description: Servicios completados
+          example: 45
+        distance_km:
+          type: number
+          description: Distancia en kilómetros desde la ubicación del usuario
+          example: 2.3
+        relevance_score:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Score de relevancia de búsqueda
+          example: 0.85
+
+    AutocompleteResponse:
+      type: object
+      properties:
+        specialties:
+          type: array
+          items:
+            $ref: '#/components/schemas/AutocompleteItem'
+          description: Sugerencias de especialidades
+        cities:
+          type: array
+          items:
+            $ref: '#/components/schemas/AutocompleteItem'
+          description: Sugerencias de ciudades
+        districts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AutocompleteItem'
+          description: Sugerencias de barrios/distritos
+
+    AutocompleteItem:
+      type: object
+      properties:
+        value:
+          type: string
+          description: Valor de la sugerencia
+          example: "Plomero"
+        count:
+          type: integer
+          description: Número de profesionales con este valor
+          example: 45
+
+  examples:
+    passwordValidation:
+      summary: Validación de contraseña
+      value:
+        isValid: true
+        score: 85
+        suggestions: ["¡Excelente! Tu contraseña es muy segura"]
+        warnings: []
+
+    weakPassword:
+      summary: Contraseña débil
+      value:
+        isValid: false
+        score: 25
+        warnings: ["La contraseña debe tener al menos 10 caracteres", "Evita contraseñas comunes"]
+        suggestions: ["Usa una combinación de letras, números y símbolos", "Aumenta la longitud de la contraseña"]

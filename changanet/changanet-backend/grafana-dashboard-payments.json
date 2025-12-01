@@ -1,0 +1,147 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Changánet - Payment System Monitoring",
+    "tags": ["changanet", "payments", "monitoring"],
+    "timezone": "America/Buenos_Aires",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Payment Processing Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(changanet_payments_processed_total[5m]))",
+            "legendFormat": "Payments/min"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 80 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Payment Status Distribution",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (estado) (changanet_payments_processed_total)",
+            "legendFormat": "{{estado}}"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Payment Processing Latency",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "rate(changanet_payment_processing_duration_seconds_sum[5m]) / rate(changanet_payment_processing_duration_seconds_count[5m])",
+            "legendFormat": "Latency (s)"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Payment Errors",
+        "type": "barchart",
+        "targets": [
+          {
+            "expr": "rate(changanet_payment_errors_total[5m])",
+            "legendFormat": "{{tipo_error}}"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Commission Revenue",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(changanet_commissions_calculated_total[1h]))",
+            "legendFormat": "Commissions/hour"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Escrow Funds",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "changanet_escrow_funds_ars",
+            "legendFormat": "Funds in escrow"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Webhook Processing",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "rate(changanet_webhooks_processed_total[5m])",
+            "legendFormat": "{{tipo}} - {{estado}}"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Payment Amount Distribution",
+        "type": "histogram",
+        "targets": [
+          {
+            "expr": "changanet_payment_amount_bucket",
+            "legendFormat": "{{le}}"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Fund Release Duration",
+        "type": "barchart",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(changanet_fund_release_duration_hours_bucket[1h]))",
+            "legendFormat": "95th percentile"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Queue Processing Stats",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "changanet_queue_stats",
+            "legendFormat": "{{queue}} - {{status}}"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 0,
+    "links": []
+  }
+}

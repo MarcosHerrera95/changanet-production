@@ -1,0 +1,206 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: changanet_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: changanet-backend/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd changanet-backend
+        npm ci
+
+    - name: Run linting
+      run: |
+        cd changanet-backend
+        npm run lint
+
+    - name: Run tests
+      run: |
+        cd changanet-backend
+        npm test
+      env:
+        DATABASE_URL: postgresql://postgres:test_password@localhost:5432/changanet_test
+        JWT_SECRET: test_jwt_secret_for_ci
+        NODE_ENV: test
+
+    - name: Generate coverage report
+      run: |
+        cd changanet-backend
+        npm run test:coverage
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        directory: changanet-backend/coverage
+        flags: backend
+
+  test-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: changanet-frontend/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd changanet-frontend
+        npm ci
+
+    - name: Run linting
+      run: |
+        cd changanet-frontend
+        npm run lint
+
+    - name: Run tests
+      run: |
+        cd changanet-frontend
+        npm test -- --coverage --watchAll=false
+      env:
+        CI: true
+
+    - name: Build for production
+      run: |
+        cd changanet-frontend
+        npm run build
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        directory: changanet-frontend/coverage
+        flags: frontend
+
+  security-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install OWASP ZAP
+      run: |
+        wget https://github.com/zaproxy/zaproxy/releases/download/v2.14.0/ZAP_2.14.0_Linux.tar.gz
+        tar -xzf ZAP_2.14.0_Linux.tar.gz
+        echo "ZAP_PATH=$PWD/ZAP_2.14.0" >> $GITHUB_ENV
+
+    - name: Run OWASP ZAP Baseline Scan
+      run: |
+        cd changanet-backend
+        npm start &
+        sleep 10
+        $ZAP_PATH/zap.sh -cmd -autorun $GITHUB_WORKSPACE/zap-baseline.conf
+      env:
+        ZAP_API_KEY: ${{ secrets.ZAP_API_KEY }}
+
+  accessibility-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: changanet-frontend/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd changanet-frontend
+        npm ci
+
+    - name: Install axe-core CLI
+      run: npm install -g axe-core-cli
+
+    - name: Build application
+      run: |
+        cd changanet-frontend
+        npm run build
+
+    - name: Run accessibility tests
+      run: |
+        cd changanet-frontend
+        npx serve dist -p 3000 &
+        sleep 5
+        axe http://localhost:3000 --exit
+
+  deploy-staging:
+    needs: [test-backend, test-frontend, security-scan, accessibility-check]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Deploy to staging
+      run: |
+        echo "🚀 Deploying to staging environment"
+        # Aquí irían los comandos de despliegue a staging
+        # Por ejemplo: kubectl apply -f k8s/staging/
+
+  deploy-production:
+    needs: [test-backend, test-frontend, security-scan, accessibility-check]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Deploy to production
+      run: |
+        echo "🎯 Deploying to production environment"
+        # Aquí irían los comandos de despliegue a producción
+        # Por ejemplo: kubectl apply -f k8s/production/
+
+  notify:
+    needs: [deploy-staging, deploy-production]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Notify deployment status
+      run: |
+        if [ "${{ needs.deploy-staging.result }}" == "success" ] || [ "${{ needs.deploy-production.result }}" == "success" ]; then
+          echo "✅ Deployment completed successfully"
+        else
+          echo "❌ Deployment failed"
+          exit 1
+        fi

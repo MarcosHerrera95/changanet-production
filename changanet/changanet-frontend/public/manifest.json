@@ -1,0 +1,80 @@
+{
+  "name": "Changánet - Servicios a Domicilio",
+  "short_name": "Changánet",
+  "description": "Plataforma de servicios a domicilio - conecta clientes con profesionales verificados",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#E30613",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "es-AR",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/vite.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Buscar Servicios",
+      "short_name": "Buscar",
+      "description": "Buscar profesionales y servicios",
+      "url": "/?action=search",
+      "icons": [
+        {
+          "src": "/vite.svg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Mis Servicios",
+      "short_name": "Servicios",
+      "description": "Ver mis servicios contratados",
+      "url": "/mi-cuenta?action=services",
+      "icons": [
+        {
+          "src": "/vite.svg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Mensajes",
+      "short_name": "Chat",
+      "description": "Ver mis conversaciones",
+      "url": "/mensajes",
+      "icons": [
+        {
+          "src": "/vite.svg",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/vite.svg",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/vite.svg",
+      "sizes": "750x1334",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ]
+}

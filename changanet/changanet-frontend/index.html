@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#E30613">
+    <meta name="description" content="Plataforma de servicios a domicilio - conecta clientes con profesionales verificados">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Changánet">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/vite.svg">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- CDN Hints y Optimizaciones de Rendimiento -->
+    <!-- Resource hints optimized for Vite development and production -->
+    <!-- Note: Vite handles automatic preloading in production builds -->
+    <!-- Manual preloading removed to prevent development warnings -->
+
+    <!-- Prefetch likely next pages -->
+    <link rel="prefetch" href="/search">
+    <link rel="prefetch" href="/professionals">
+
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//api.changanet.com">
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//fonts.gstatic.com">
+
+    <!-- Environment-optimized resource hints for performance -->
+    <!-- Development hints -->
+    <link rel="preconnect" href="http://localhost:3003" crossorigin>
+    <!-- Production hints (uncomment for production deployment)
+    <link rel="preconnect" href="https://api.changanet.com" crossorigin>
+    <link rel="preconnect" href="https://images.changanet.com" crossorigin>
+    -->
+    
+    <!-- Dynamic resource hints injected by JavaScript for optimal loading -->
+    <script>
+      // Environment-aware resource preloading
+      (function() {
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        if (isDevelopment) {
+          // In development, use basic preconnect only to avoid preload warnings
+          console.log('🚀 Changánet: Development mode - using minimal resource hints');
+        } else {
+          // In production, add intelligent preloading
+          console.log('🚀 Changánet: Production mode - using optimized resource hints');
+          
+          // Preload critical CSS after a short delay to avoid blocking
+          setTimeout(() => {
+            const link = document.createElement('link');
+            link.rel = 'preload';
+            link.href = '/src/index.css';
+            link.as = 'style';
+            link.onload = function() { this.rel = 'stylesheet'; };
+            document.head.appendChild(link);
+          }, 100);
+          
+          // Prefetch likely routes
+          const prefetchRoutes = ['/search', '/professionals', '/dashboard'];
+          prefetchRoutes.forEach(route => {
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.href = route;
+            document.head.appendChild(link);
+          });
+        }
+      })();
+    </script>
+
+    <title>Changánet - Profesionales de Confianza</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

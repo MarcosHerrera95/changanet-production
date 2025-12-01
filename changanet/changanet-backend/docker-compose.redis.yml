@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: changanet-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass changanet2024
+    environment:
+      - REDIS_PASSWORD=changanet2024
+    networks:
+      - changanet-network
+
+  # Opcional: Redis Commander para monitoreo visual
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: changanet-redis-commander
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0:changanet2024
+    depends_on:
+      - redis
+    networks:
+      - changanet-network
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  changanet-network:
+    driver: bridge
+    name: changanet-network

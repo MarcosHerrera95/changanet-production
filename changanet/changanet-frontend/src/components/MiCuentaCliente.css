@@ -1,0 +1,145 @@
+/* Estilos para el componente MiCuentaCliente */
+
+/* Contenedor principal */
+.mi-cuenta-cliente-container {
+  background-color: var(--gray-50);
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Tarjeta blanca para el contenido */
+.mi-cuenta-card {
+  background-color: var(--bg-primary);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  padding: 20px;
+}
+
+/* Sección de saludo */
+.saludo {
+  margin-bottom: 20px;
+}
+
+.saludo h3 {
+  color: var(--primary);
+  margin: 0;
+  font-size: 24px;
+}
+
+.saludo p {
+  color: var(--text-secondary);
+  margin: 5px 0;
+  font-size: 16px;
+}
+
+/* Contenedor de estadísticas */
+.stats-container {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+/* Tarjeta de estadística */
+.stat-card {
+  background-color: var(--bg-primary);
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  min-width: 100px;
+  margin: 5px;
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-card span {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--primary);
+  display: block;
+}
+
+.stat-card p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Contenedor de acciones rápidas */
+.acciones-rapidas {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Botón de acción */
+.accion-btn {
+  padding: 15px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* Enfoque para accesibilidad */
+.accion-btn:focus {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+
+/* Botón buscar profesionales - rojo como en dashboards */
+.buscar-profesionales {
+  background-color: var(--primary);
+  color: var(--text-white);
+}
+
+.buscar-profesionales:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Botones mi perfil y mis cotizaciones */
+.mi-perfil,
+.mis-cotizaciones {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  border: 1px solid var(--border-medium);
+}
+
+.mi-perfil:hover,
+.mis-cotizaciones:hover {
+  background-color: var(--gray-50);
+  border-color: var(--border-dark);
+}
+
+/* Texto pequeño en botones */
+.accion-btn small {
+  display: block;
+  font-size: 12px;
+  margin-top: 5px;
+  font-weight: normal;
+}
+
+/* Media query para dispositivos móviles */
+@media (max-width: 600px) {
+  .stats-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .stat-card {
+    width: 80%;
+  }
+
+  .acciones-rapidas {
+    gap: 10px;
+  }
+
+  .accion-btn {
+    padding: 12px;
+    font-size: 14px;
+  }
+}

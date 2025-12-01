@@ -1,0 +1,588 @@
+/* Estilos para el modal de Cotizaciones del Profesional */
+
+/* Overlay del modal principal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+/* Contenido del modal principal */
+.modal-content {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Header del modal */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+  border-radius: 10px 10px 0 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #495057;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #495057;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Botón de cierre */
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background-color: #e9ecef;
+  color: #495057;
+}
+
+/* Body del modal */
+.modal-body {
+  padding: 25px;
+}
+
+.modal-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+/* Secciones de cotizaciones */
+.quote-section {
+  margin-bottom: 30px;
+}
+
+.quote-section h4 {
+  color: #495057;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 8px;
+}
+
+.section-description {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+  font-style: italic;
+}
+
+/* Lista de cotizaciones */
+.quotes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Item de cotización */
+.quote-item {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  transition: all 0.2s ease;
+}
+
+.quote-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Estados de cotización */
+.quote-item.pending {
+  border-left: 4px solid #dc3545;
+}
+
+.quote-item.sent {
+  border-left: 4px solid var(--info);
+}
+
+.quote-item.accepted {
+  border-left: 4px solid #28a745;
+}
+
+.quote-item.recent {
+  border-left: 4px solid #17a2b8;
+}
+
+/* Información de la cotización */
+.quote-info {
+  flex: 1;
+}
+
+.quote-info h5 {
+  color: #495057;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.client-info {
+  color: #6c757d;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.quote-description {
+  color: #495057;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.description-text {
+  background-color: #f1f3f4;
+  padding: 10px;
+  border-radius: 5px;
+  margin-top: 5px;
+}
+
+/* Respuesta del profesional */
+.response-info {
+  background-color: #e7f3ff;
+  border: 1px solid #b8daff;
+  border-radius: 5px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.response-info p {
+  margin: 5px 0;
+  font-size: 0.9rem;
+}
+
+.my-response {
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 5px;
+  padding: 15px;
+  margin-top: 10px;
+}
+
+.my-response p {
+  margin: 5px 0;
+  font-size: 0.95rem;
+}
+
+/* Badge de estado */
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.status-badge.pending {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.status-badge.sent {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.status-badge.accepted {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-badge.recent {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+/* Acciones de cotización */
+.quote-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+/* Grupo de botones de acción */
+.action-buttons-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Botón de chat */
+.btn-chat {
+  background-color: var(--primary) !important;
+  color: var(--text-white);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-chat:hover:not(:disabled) {
+  background-color: #007d6b !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 150, 136, 0.3);
+}
+
+.btn-chat:disabled {
+  background-color: #6c757d !important;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Estilos para icono de chat */
+.btn-chat span {
+  font-size: 16px;
+}
+
+/* Botón ver detalles */
+.btn-details {
+  background-color: var(--info);
+  color: var(--text-white);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.btn-details:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+/* Modal de detalles */
+.modal-overlay-details {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+  padding: 20px;
+}
+
+.modal-content-details {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.2);
+  max-width: 600px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Detalles de la solicitud */
+.request-details {
+  margin-bottom: 25px;
+}
+
+.detail-group {
+  margin-bottom: 20px;
+}
+
+.detail-group h4 {
+  color: #495057;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.detail-group p {
+  color: #495057;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+/* Formulario de respuesta */
+.response-form {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.response-form h4 {
+  color: #495057;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  color: #495057;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Acciones del formulario */
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* Botones del formulario */
+.btn-submit {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-submit:hover {
+  background-color: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.btn-complete {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-complete:hover {
+  background-color: #138496;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
+}
+
+.btn-cancel {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+  background-color: #545b62;
+  transform: translateY(-1px);
+}
+
+/* Acciones para trabajos aceptados */
+.accepted-work-actions {
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+  
+  .modal-content {
+    max-height: 95vh;
+  }
+  
+  .modal-header {
+    padding: 15px 20px;
+  }
+  
+  .modal-body {
+    padding: 20px;
+  }
+  
+  .quote-item {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .quote-actions {
+    align-items: stretch;
+  }
+  
+  .action-buttons-group {
+    width: 100%;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .btn-details,
+  .btn-submit,
+  .btn-complete,
+  .btn-cancel,
+  .btn-chat {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .modal-overlay-details {
+    padding: 10px;
+  }
+  
+  .modal-content-details {
+    max-height: 90vh;
+  }
+}
+
+/* Animaciones suaves */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-content,
+.modal-content-details {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Estados de focus para accesibilidad */
+button:focus,
+input:focus,
+textarea:focus {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+
+/* Scroll personalizado */
+.modal-content::-webkit-scrollbar,
+.modal-content-details::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track,
+.modal-content-details::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb,
+.modal-content-details::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover,
+.modal-content-details::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
