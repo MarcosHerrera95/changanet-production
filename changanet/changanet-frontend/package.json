@@ -16,6 +16,7 @@
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hook-form": "^7.67.0",
     "react-router-dom": "^6.4.0",
     "react-window": "^2.2.3",
     "react-window-infinite-loader": "^2.0.0",
@@ -54,7 +55,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "postcss": "^8.4.16",
     "tailwindcss": "^3.1.8",
-    "vite": "^3.0.7"
+    "vite": "^3.2.11"
   },
   "overrides": {
     "react": "^18.2.0",
