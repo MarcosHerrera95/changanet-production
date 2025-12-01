@@ -1,0 +1,16 @@
+{
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix changanet-backend\" \"npm run dev --prefix changanet-frontend\"",
+    "dev:backend": "npm run dev --prefix changanet-backend",
+    "dev:frontend": "npm run dev --prefix changanet-frontend"
+  },
+  "dependencies": {
+    "@sentry/browser": "^10.22.0",
+    "axios": "^1.12.2",
+    "dotenv": "^17.2.3",
+    "nodemailer": "^7.0.6"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
