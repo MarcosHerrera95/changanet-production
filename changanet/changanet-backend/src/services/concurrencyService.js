@@ -135,7 +135,7 @@ class ConcurrencyService {
         // Check if the existing lock is expired
         const existingLock = await prisma.$queryRaw`
           SELECT * FROM concurrency_locks
-          WHERE resource_key = ${lockKey} AND expires_at > datetime('now')
+          WHERE resource_key = ${lockKey} AND expires_at > NOW()
           LIMIT 1
         `;
 
@@ -173,7 +173,7 @@ class ConcurrencyService {
   async forceReleaseExpiredLock(lockKey) {
     await prisma.$executeRaw`
       DELETE FROM concurrency_locks
-      WHERE resource_key = ${lockKey} AND expires_at <= datetime('now')
+      WHERE resource_key = ${lockKey} AND expires_at <= NOW()
     `;
   }
 
@@ -220,7 +220,7 @@ class ConcurrencyService {
       // Clean up database locks
       await prisma.$executeRaw`
         DELETE FROM concurrency_locks
-        WHERE expires_at <= datetime('now')
+        WHERE expires_at <= NOW()
       `;
 
       // Clean up memory locks
@@ -254,7 +254,7 @@ class ConcurrencyService {
     try {
       const result = await prisma.$queryRaw`
         SELECT COUNT(*) as count FROM concurrency_locks
-        WHERE resource_key = ${lockKey} AND expires_at > datetime('now')
+        WHERE resource_key = ${lockKey} AND expires_at > NOW()
       `;
 
       return result[0].count > 0;
@@ -274,10 +274,10 @@ class ConcurrencyService {
 
       if (resourceKey) {
         const lockKey = this.hashResourceKey(resourceKey);
-        query = `SELECT * FROM concurrency_locks WHERE resource_key = ? AND expires_at > datetime('now')`;
+        query = `SELECT * FROM concurrency_locks WHERE resource_key = ? AND expires_at > NOW()`;
         params = [lockKey];
       } else {
-        query = `SELECT * FROM concurrency_locks WHERE expires_at > datetime('now') ORDER BY created_at DESC LIMIT 100`;
+        query = `SELECT * FROM concurrency_locks WHERE expires_at > NOW() ORDER BY created_at DESC LIMIT 100`;
       }
 
       const locks = await prisma.$queryRaw(query, ...params);
