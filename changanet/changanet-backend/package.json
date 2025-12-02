@@ -44,6 +44,7 @@
     "helmet": "^7.0.0",
     "ical-generator": "^10.0.0",
     "ioredis": "^5.8.2",
+    "isomorphic-dompurify": "^2.30.0",
     "joi": "^18.0.2",
     "js-yaml": "^4.1.0",
     "jsdom": "^27.2.0",
