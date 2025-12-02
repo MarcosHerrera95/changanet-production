@@ -22,11 +22,13 @@
     "react-router-dom": "^6.4.0",
     "react-window": "^2.2.3",
     "react-window-infinite-loader": "^2.0.0",
+    "serve": "^14.2.1",
     "socket.io-client": "^4.8.1"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "start": "serve -s dist -l 3000",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
