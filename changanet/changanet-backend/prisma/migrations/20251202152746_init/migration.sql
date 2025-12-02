@@ -1,6 +1,18 @@
+-- CreateEnum
+CREATE TYPE "EstadoServicio" AS ENUM ('PENDIENTE', 'AGENDADO', 'COMPLETADO', 'CANCELADO');
+
+-- CreateEnum
+CREATE TYPE "EstadoCotizacion" AS ENUM ('PENDIENTE', 'ACEPTADO', 'RECHAZADO');
+
+-- CreateEnum
+CREATE TYPE "NotificationPriority" AS ENUM ('CRITICAL', 'HIGH', 'MEDIUM', 'LOW');
+
+-- CreateEnum
+CREATE TYPE "NotificationType" AS ENUM ('MENSAJE', 'COTIZACION', 'SERVICIO', 'PAGO', 'SISTEMA', 'MARKETING');
+
 -- CreateTable
 CREATE TABLE "usuarios" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "hash_contrasena" TEXT,
     "nombre" TEXT NOT NULL,
@@ -9,12 +21,12 @@ CREATE TABLE "usuarios" (
     "esta_verificado" BOOLEAN NOT NULL DEFAULT false,
     "bloqueado" BOOLEAN NOT NULL DEFAULT false,
     "token_verificacion" TEXT,
-    "token_expiracion" DATETIME,
+    "token_expiracion" TIMESTAMP(3),
     "refresh_token_hash" TEXT,
-    "ultimo_email_verificacion" DATETIME,
-    "ultimo_email_reset_password" DATETIME,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "actualizado_en" DATETIME,
+    "ultimo_email_verificacion" TIMESTAMP(3),
+    "ultimo_email_reset_password" TIMESTAMP(3),
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "actualizado_en" TIMESTAMP(3),
     "google_id" TEXT,
     "social_provider" TEXT,
     "social_provider_id" TEXT,
@@ -29,134 +41,139 @@ CREATE TABLE "usuarios" (
     "notificaciones_servicios" BOOLEAN NOT NULL DEFAULT true,
     "notificaciones_mensajes" BOOLEAN NOT NULL DEFAULT true,
     "notificaciones_pagos" BOOLEAN NOT NULL DEFAULT true,
-    "notificaciones_marketing" BOOLEAN NOT NULL DEFAULT false
+    "notificaciones_marketing" BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT "usuarios_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "failed_attempts" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "email" TEXT,
     "user_id" TEXT,
     "ip_address" TEXT NOT NULL,
     "user_agent" TEXT,
     "reason" TEXT NOT NULL,
-    "attempt_time" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "blocked_until" DATETIME,
-    CONSTRAINT "failed_attempts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "usuarios" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "attempt_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "blocked_until" TIMESTAMP(3),
+
+    CONSTRAINT "failed_attempts_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "perfiles_profesionales" (
-    "usuario_id" TEXT NOT NULL PRIMARY KEY,
+    "usuario_id" TEXT NOT NULL,
     "especialidad" TEXT NOT NULL,
     "especialidades" TEXT,
     "anos_experiencia" INTEGER,
     "zona_cobertura" TEXT NOT NULL,
     "ubicacion" TEXT,
-    "latitud" REAL,
-    "longitud" REAL,
+    "latitud" DOUBLE PRECISION,
+    "longitud" DOUBLE PRECISION,
     "tipo_tarifa" TEXT NOT NULL DEFAULT 'hora',
-    "tarifa_hora" REAL,
-    "tarifa_servicio" REAL,
+    "tarifa_hora" DOUBLE PRECISION,
+    "tarifa_servicio" DOUBLE PRECISION,
     "tarifa_convenio" TEXT,
     "descripcion" TEXT,
     "url_foto_perfil" TEXT,
     "url_foto_portada" TEXT,
     "esta_disponible" BOOLEAN NOT NULL DEFAULT true,
-    "calificacion_promedio" REAL,
+    "calificacion_promedio" DOUBLE PRECISION,
     "estado_verificacion" TEXT NOT NULL DEFAULT 'pendiente',
-    "verificado_en" DATETIME,
+    "verificado_en" TIMESTAMP(3),
     "url_documento_verificacion" TEXT,
     "search_vector" TEXT,
     "search_vector_especialidades" TEXT,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "actualizado_en" DATETIME,
-    CONSTRAINT "perfiles_profesionales_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "actualizado_en" TIMESTAMP(3),
+
+    CONSTRAINT "perfiles_profesionales_pkey" PRIMARY KEY ("usuario_id")
 );
 
 -- CreateTable
 CREATE TABLE "servicios" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "cliente_id" TEXT NOT NULL,
     "profesional_id" TEXT NOT NULL,
     "descripcion" TEXT NOT NULL,
-    "estado" TEXT NOT NULL DEFAULT 'PENDIENTE',
-    "fecha_agendada" DATETIME,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "completado_en" DATETIME,
+    "estado" "EstadoServicio" NOT NULL DEFAULT 'PENDIENTE',
+    "fecha_agendada" TIMESTAMP(3),
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completado_en" TIMESTAMP(3),
     "es_urgente" BOOLEAN NOT NULL DEFAULT false,
     "servicio_recurrente_id" TEXT,
-    CONSTRAINT "servicios_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "servicios_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "servicios_servicio_recurrente_id_fkey" FOREIGN KEY ("servicio_recurrente_id") REFERENCES "servicios_recurrrentes" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+
+    CONSTRAINT "servicios_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "resenas" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "servicio_id" TEXT NOT NULL,
     "cliente_id" TEXT NOT NULL,
     "calificacion" INTEGER NOT NULL,
     "comentario" TEXT,
     "url_foto" TEXT,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "resenas_servicio_id_fkey" FOREIGN KEY ("servicio_id") REFERENCES "servicios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "resenas_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "resenas_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "mensajes" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "remitente_id" TEXT NOT NULL,
     "destinatario_id" TEXT NOT NULL,
     "contenido" TEXT NOT NULL,
     "url_imagen" TEXT,
     "esta_leido" BOOLEAN NOT NULL DEFAULT false,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "mensajes_remitente_id_fkey" FOREIGN KEY ("remitente_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "mensajes_destinatario_id_fkey" FOREIGN KEY ("destinatario_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "mensajes_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "disponibilidad" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "profesional_id" TEXT NOT NULL,
-    "fecha" DATETIME NOT NULL,
-    "hora_inicio" DATETIME NOT NULL,
-    "hora_fin" DATETIME NOT NULL,
+    "fecha" TIMESTAMP(3) NOT NULL,
+    "hora_inicio" TIMESTAMP(3) NOT NULL,
+    "hora_fin" TIMESTAMP(3) NOT NULL,
     "esta_disponible" BOOLEAN NOT NULL DEFAULT true,
     "reservado_por" TEXT,
-    "reservado_en" DATETIME,
+    "reservado_en" TIMESTAMP(3),
     "servicio_id" TEXT,
-    CONSTRAINT "disponibilidad_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "disponibilidad_reservado_por_fkey" FOREIGN KEY ("reservado_por") REFERENCES "usuarios" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "disponibilidad_servicio_id_fkey" FOREIGN KEY ("servicio_id") REFERENCES "servicios" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+
+    CONSTRAINT "disponibilidad_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "notificaciones" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "usuario_id" TEXT NOT NULL,
-    "prioridad" TEXT NOT NULL DEFAULT 'MEDIUM',
-    "tipo" TEXT NOT NULL,
+    "prioridad" "NotificationPriority" NOT NULL DEFAULT 'MEDIUM',
+    "tipo" "NotificationType" NOT NULL,
     "subtipo" TEXT,
+    "entity_type" TEXT,
+    "entity_id" TEXT,
     "titulo" TEXT NOT NULL,
     "mensaje" TEXT NOT NULL,
     "metadata" TEXT,
     "esta_leido" BOOLEAN NOT NULL DEFAULT false,
     "canales_enviados" TEXT,
-    "fecha_envio" DATETIME,
-    "programado_para" DATETIME,
-    "expira_en" DATETIME,
+    "fecha_envio" TIMESTAMP(3),
+    "programado_para" TIMESTAMP(3),
+    "expira_en" TIMESTAMP(3),
     "plantilla_usada" TEXT,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "actualizado_en" DATETIME,
-    CONSTRAINT "notificaciones_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "actualizado_en" TIMESTAMP(3),
+
+    CONSTRAINT "notificaciones_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "notification_preferences" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "usuario_id" TEXT NOT NULL,
     "enabled" BOOLEAN NOT NULL DEFAULT true,
     "timezone" TEXT NOT NULL DEFAULT 'America/Buenos_Aires',
@@ -169,17 +186,18 @@ CREATE TABLE "notification_preferences" (
     "max_notifications_per_hour" INTEGER NOT NULL DEFAULT 50,
     "group_similar" BOOLEAN NOT NULL DEFAULT true,
     "sound_enabled" BOOLEAN NOT NULL DEFAULT true,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "actualizado_en" DATETIME,
-    CONSTRAINT "notification_preferences_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "actualizado_en" TIMESTAMP(3),
+
+    CONSTRAINT "notification_preferences_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "notification_templates" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "nombre" TEXT NOT NULL,
     "descripcion" TEXT,
-    "tipo" TEXT NOT NULL,
+    "tipo" "NotificationType" NOT NULL,
     "subtipo" TEXT,
     "titulo_push" TEXT,
     "mensaje_push" TEXT,
@@ -188,16 +206,18 @@ CREATE TABLE "notification_templates" (
     "asunto_email" TEXT,
     "mensaje_sms" TEXT,
     "variables" TEXT,
-    "prioridad_default" TEXT NOT NULL DEFAULT 'MEDIUM',
+    "prioridad_default" "NotificationPriority" NOT NULL DEFAULT 'MEDIUM',
     "activo" BOOLEAN NOT NULL DEFAULT true,
     "version" INTEGER NOT NULL DEFAULT 1,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "actualizado_en" DATETIME
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "actualizado_en" TIMESTAMP(3),
+
+    CONSTRAINT "notification_templates_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "notification_metrics" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "usuario_id" TEXT,
     "tipo_notificacion" TEXT NOT NULL,
     "canal" TEXT NOT NULL,
@@ -205,81 +225,82 @@ CREATE TABLE "notification_metrics" (
     "entregada" BOOLEAN NOT NULL DEFAULT false,
     "leida" BOOLEAN NOT NULL DEFAULT false,
     "clickeada" BOOLEAN NOT NULL DEFAULT false,
-    "fecha_envio" DATETIME,
-    "fecha_entrega" DATETIME,
-    "fecha_lectura" DATETIME,
-    "fecha_click" DATETIME,
+    "fecha_envio" TIMESTAMP(3),
+    "fecha_entrega" TIMESTAMP(3),
+    "fecha_lectura" TIMESTAMP(3),
+    "fecha_click" TIMESTAMP(3),
     "metadata" TEXT,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "notification_metrics_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "notification_metrics_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "cotizaciones" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "cliente_id" TEXT NOT NULL,
     "descripcion" TEXT NOT NULL,
     "zona_cobertura" TEXT,
     "fotos_urls" TEXT,
     "profesionales_solicitados" TEXT,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "cotizaciones_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "cotizaciones_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "cotizacion_respuestas" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "cotizacion_id" TEXT NOT NULL,
     "profesional_id" TEXT NOT NULL,
-    "precio" REAL,
+    "precio" DOUBLE PRECISION,
     "comentario" TEXT,
-    "estado" TEXT NOT NULL DEFAULT 'PENDIENTE',
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "respondido_en" DATETIME,
-    CONSTRAINT "cotizacion_respuestas_cotizacion_id_fkey" FOREIGN KEY ("cotizacion_id") REFERENCES "cotizaciones" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "cotizacion_respuestas_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "estado" "EstadoCotizacion" NOT NULL DEFAULT 'PENDIENTE',
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "respondido_en" TIMESTAMP(3),
+
+    CONSTRAINT "cotizacion_respuestas_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "verification_requests" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "usuario_id" TEXT NOT NULL,
     "documento_url" TEXT NOT NULL,
     "estado" TEXT NOT NULL DEFAULT 'pendiente',
     "comentario_admin" TEXT,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "revisado_en" DATETIME,
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "revisado_en" TIMESTAMP(3),
     "revisado_por" TEXT,
-    CONSTRAINT "verification_requests_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+
+    CONSTRAINT "verification_requests_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "pagos" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "servicio_id" TEXT NOT NULL,
     "cliente_id" TEXT NOT NULL,
     "profesional_id" TEXT NOT NULL,
-    "monto_total" REAL NOT NULL,
-    "comision_plataforma" REAL NOT NULL,
-    "monto_profesional" REAL NOT NULL,
+    "monto_total" DOUBLE PRECISION NOT NULL,
+    "comision_plataforma" DOUBLE PRECISION NOT NULL,
+    "monto_profesional" DOUBLE PRECISION NOT NULL,
     "mercado_pago_id" TEXT,
     "estado" TEXT NOT NULL DEFAULT 'pendiente',
     "metodo_pago" TEXT,
-    "fecha_pago" DATETIME,
-    "fecha_liberacion" DATETIME,
+    "fecha_pago" TIMESTAMP(3),
+    "fecha_liberacion" TIMESTAMP(3),
     "url_comprobante" TEXT,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "commission_setting_id" TEXT,
-    "escrow_release_deadline" DATETIME,
-    CONSTRAINT "pagos_servicio_id_fkey" FOREIGN KEY ("servicio_id") REFERENCES "servicios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "pagos_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "pagos_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "pagos_commission_setting_id_fkey" FOREIGN KEY ("commission_setting_id") REFERENCES "commission_settings" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "escrow_release_deadline" TIMESTAMP(3),
+
+    CONSTRAINT "pagos_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "cuentas_bancarias" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "profesional_id" TEXT NOT NULL,
     "banco" TEXT NOT NULL,
     "tipo_cuenta" TEXT NOT NULL DEFAULT 'checking',
@@ -290,84 +311,88 @@ CREATE TABLE "cuentas_bancarias" (
     "documento_titular_encrypted" TEXT NOT NULL,
     "estado" TEXT NOT NULL DEFAULT 'pendiente',
     "verificado" BOOLEAN NOT NULL DEFAULT false,
-    "fecha_verificacion" DATETIME,
+    "fecha_verificacion" TIMESTAMP(3),
     "verificado_por" TEXT,
     "motivo_rechazo" TEXT,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "actualizado_en" DATETIME NOT NULL,
-    CONSTRAINT "cuentas_bancarias_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "actualizado_en" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "cuentas_bancarias_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "retiros" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "profesional_id" TEXT NOT NULL,
     "cuenta_bancaria_id" TEXT NOT NULL,
-    "monto" REAL NOT NULL,
+    "monto" DOUBLE PRECISION NOT NULL,
     "estado" TEXT NOT NULL DEFAULT 'pendiente',
-    "fecha_solicitud" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "fecha_procesamiento" DATETIME,
+    "fecha_solicitud" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "fecha_procesamiento" TIMESTAMP(3),
     "referencia_bancaria" TEXT,
     "notas" TEXT,
     "motivo_rechazo" TEXT,
     "procesado_por" TEXT,
-    "procesado_en" DATETIME,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "retiros_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "retiros_cuenta_bancaria_id_fkey" FOREIGN KEY ("cuenta_bancaria_id") REFERENCES "cuentas_bancarias" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "procesado_en" TIMESTAMP(3),
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "retiros_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "commission_settings" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "nombre" TEXT NOT NULL,
-    "porcentaje" REAL NOT NULL,
+    "porcentaje" DOUBLE PRECISION NOT NULL,
     "tipo_servicio" TEXT,
     "descripcion" TEXT,
     "activo" BOOLEAN NOT NULL DEFAULT true,
-    "fecha_creacion" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "creado_por" TEXT
+    "fecha_creacion" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "creado_por" TEXT,
+
+    CONSTRAINT "commission_settings_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "transactions_log" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "tipo_transaccion" TEXT NOT NULL,
     "entidad_tipo" TEXT NOT NULL,
     "entidad_id" TEXT NOT NULL,
     "usuario_id" TEXT,
-    "monto" REAL,
+    "monto" DOUBLE PRECISION,
     "detalles" TEXT,
     "ip_address" TEXT,
     "user_agent" TEXT,
     "exito" BOOLEAN NOT NULL DEFAULT true,
     "error_mensaje" TEXT,
-    "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "transactions_log_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "transactions_log_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "payouts" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "profesional_id" TEXT NOT NULL,
     "servicio_id" TEXT,
-    "monto_bruto" REAL NOT NULL,
-    "comision_plataforma" REAL NOT NULL,
-    "monto_neto" REAL NOT NULL,
+    "monto_bruto" DOUBLE PRECISION NOT NULL,
+    "comision_plataforma" DOUBLE PRECISION NOT NULL,
+    "monto_neto" DOUBLE PRECISION NOT NULL,
     "estado" TEXT NOT NULL DEFAULT 'pendiente',
     "metodo_pago" TEXT NOT NULL DEFAULT 'bank_transfer',
     "referencia_pago" TEXT,
-    "fecha_pago" DATETIME,
-    "procesado_en" DATETIME,
+    "fecha_pago" TIMESTAMP(3),
+    "procesado_en" TIMESTAMP(3),
     "notas" TEXT,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "payouts_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "payouts_servicio_id_fkey" FOREIGN KEY ("servicio_id") REFERENCES "servicios" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "payouts_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "servicios_recurrrentes" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "cliente_id" TEXT NOT NULL,
     "profesional_id" TEXT NOT NULL,
     "descripcion" TEXT NOT NULL,
@@ -375,55 +400,55 @@ CREATE TABLE "servicios_recurrrentes" (
     "dia_semana" INTEGER,
     "dia_mes" INTEGER,
     "hora_inicio" TEXT NOT NULL,
-    "duracion_horas" REAL NOT NULL,
-    "tarifa_base" REAL NOT NULL,
-    "descuento_recurrencia" REAL NOT NULL DEFAULT 0,
-    "fecha_inicio" DATETIME NOT NULL,
-    "fecha_fin" DATETIME,
+    "duracion_horas" DOUBLE PRECISION NOT NULL,
+    "tarifa_base" DOUBLE PRECISION NOT NULL,
+    "descuento_recurrencia" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "fecha_inicio" TIMESTAMP(3) NOT NULL,
+    "fecha_fin" TIMESTAMP(3),
     "activo" BOOLEAN NOT NULL DEFAULT true,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "actualizado_en" DATETIME,
-    CONSTRAINT "servicios_recurrrentes_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "servicios_recurrrentes_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "actualizado_en" TIMESTAMP(3),
+
+    CONSTRAINT "servicios_recurrrentes_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "conversations" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "client_id" TEXT NOT NULL,
     "professional_id" TEXT NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME,
-    CONSTRAINT "conversations_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "conversations_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3),
+
+    CONSTRAINT "conversations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "messages" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "conversation_id" TEXT NOT NULL,
     "sender_id" TEXT NOT NULL,
     "message" TEXT NOT NULL,
     "image_url" TEXT,
     "status" TEXT NOT NULL DEFAULT 'sent',
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "messages_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "conversations" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "messages_sender_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "messages_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "favoritos" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "cliente_id" TEXT NOT NULL,
     "profesional_id" TEXT NOT NULL,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "favoritos_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "favoritos_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "favoritos_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "logros" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "nombre" TEXT NOT NULL,
     "descripcion" TEXT NOT NULL,
     "icono" TEXT NOT NULL,
@@ -431,67 +456,69 @@ CREATE TABLE "logros" (
     "criterio" TEXT NOT NULL,
     "puntos" INTEGER NOT NULL DEFAULT 0,
     "activo" BOOLEAN NOT NULL DEFAULT true,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "logros_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "logros_usuario" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "usuario_id" TEXT NOT NULL,
     "logro_id" TEXT NOT NULL,
-    "obtenido_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "logros_usuario_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "logros_usuario_logro_id_fkey" FOREIGN KEY ("logro_id") REFERENCES "logros" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "obtenido_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "logros_usuario_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "professionals_availability" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "professional_id" TEXT NOT NULL,
     "title" TEXT,
     "description" TEXT,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "recurrence_type" TEXT NOT NULL DEFAULT 'none',
     "recurrence_config" TEXT,
-    "start_date" DATETIME NOT NULL,
-    "end_date" DATETIME,
+    "start_date" TIMESTAMP(3) NOT NULL,
+    "end_date" TIMESTAMP(3),
     "start_time" TEXT NOT NULL,
     "end_time" TEXT NOT NULL,
     "duration_minutes" INTEGER NOT NULL DEFAULT 60,
     "timezone" TEXT NOT NULL DEFAULT 'America/Buenos_Aires',
     "dst_handling" TEXT NOT NULL DEFAULT 'auto',
     "meta" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     "created_by" TEXT,
-    CONSTRAINT "professionals_availability_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+
+    CONSTRAINT "professionals_availability_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "availability_slots" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "professional_id" TEXT NOT NULL,
     "availability_config_id" TEXT,
-    "start_time" DATETIME NOT NULL,
-    "end_time" DATETIME NOT NULL,
+    "start_time" TIMESTAMP(3) NOT NULL,
+    "end_time" TIMESTAMP(3) NOT NULL,
     "local_start_time" TEXT NOT NULL,
     "local_end_time" TEXT NOT NULL,
     "timezone" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'available',
     "is_available" BOOLEAN NOT NULL DEFAULT true,
     "booked_by" TEXT,
-    "booked_at" DATETIME,
+    "booked_at" TIMESTAMP(3),
     "meta" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
-    CONSTRAINT "availability_slots_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "availability_slots_availability_config_id_fkey" FOREIGN KEY ("availability_config_id") REFERENCES "professionals_availability" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "availability_slots_booked_by_fkey" FOREIGN KEY ("booked_by") REFERENCES "usuarios" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "availability_slots_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "appointments" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "professional_id" TEXT NOT NULL,
     "client_id" TEXT NOT NULL,
     "slot_id" TEXT,
@@ -502,84 +529,85 @@ CREATE TABLE "appointments" (
     "appointment_type" TEXT NOT NULL DEFAULT 'service',
     "status" TEXT NOT NULL DEFAULT 'scheduled',
     "priority" TEXT NOT NULL DEFAULT 'normal',
-    "scheduled_start" DATETIME NOT NULL,
-    "scheduled_end" DATETIME NOT NULL,
-    "actual_start" DATETIME,
-    "actual_end" DATETIME,
+    "scheduled_start" TIMESTAMP(3) NOT NULL,
+    "scheduled_end" TIMESTAMP(3) NOT NULL,
+    "actual_start" TIMESTAMP(3),
+    "actual_end" TIMESTAMP(3),
     "timezone" TEXT NOT NULL DEFAULT 'America/Buenos_Aires',
     "notes" TEXT,
     "client_notes" TEXT,
-    "price" REAL,
+    "price" DOUBLE PRECISION,
     "currency" TEXT NOT NULL DEFAULT 'ARS',
     "reminder_sent" BOOLEAN NOT NULL DEFAULT false,
-    "reminder_time" DATETIME,
+    "reminder_time" TIMESTAMP(3),
     "google_event_id" TEXT,
     "ical_uid" TEXT,
     "meta" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     "created_by" TEXT NOT NULL,
-    "cancelled_at" DATETIME,
+    "cancelled_at" TIMESTAMP(3),
     "cancelled_by" TEXT,
     "cancel_reason" TEXT,
-    CONSTRAINT "appointments_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "appointments_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "appointments_slot_id_fkey" FOREIGN KEY ("slot_id") REFERENCES "availability_slots" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "appointments_availability_config_id_fkey" FOREIGN KEY ("availability_config_id") REFERENCES "professionals_availability" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "appointments_service_id_fkey" FOREIGN KEY ("service_id") REFERENCES "servicios" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+
+    CONSTRAINT "appointments_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "blocked_slots" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "professional_id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "reason" TEXT NOT NULL,
     "description" TEXT,
-    "start_time" DATETIME NOT NULL,
-    "end_time" DATETIME NOT NULL,
+    "start_time" TIMESTAMP(3) NOT NULL,
+    "end_time" TIMESTAMP(3) NOT NULL,
     "is_recurring" BOOLEAN NOT NULL DEFAULT false,
     "recurrence_rule" TEXT,
     "timezone" TEXT NOT NULL DEFAULT 'America/Buenos_Aires',
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_by" TEXT NOT NULL,
     "meta" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
-    CONSTRAINT "blocked_slots_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "blocked_slots_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "concurrency_locks" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "resource_key" TEXT NOT NULL,
     "lock_id" TEXT NOT NULL,
-    "expires_at" DATETIME NOT NULL,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "expires_at" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "concurrency_locks_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "calendar_connections" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
     "calendar_type" TEXT NOT NULL,
     "calendar_id" TEXT NOT NULL,
     "calendar_name" TEXT,
     "access_token" TEXT,
     "refresh_token" TEXT,
-    "token_expires_at" DATETIME,
+    "token_expires_at" TIMESTAMP(3),
     "is_active" BOOLEAN NOT NULL DEFAULT true,
-    "last_sync_at" DATETIME,
+    "last_sync_at" TIMESTAMP(3),
     "sync_status" TEXT NOT NULL DEFAULT 'pending',
     "meta" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
-    CONSTRAINT "calendar_connections_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "calendar_connections_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "calendar_sync_logs" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
     "connection_id" TEXT,
     "operation" TEXT NOT NULL,
@@ -590,52 +618,54 @@ CREATE TABLE "calendar_sync_logs" (
     "conflict_type" TEXT,
     "conflict_data" TEXT,
     "resolved" BOOLEAN NOT NULL DEFAULT false,
-    "resolved_at" DATETIME,
+    "resolved_at" TIMESTAMP(3),
     "resolution" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "calendar_sync_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "usuarios" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "calendar_sync_logs_connection_id_fkey" FOREIGN KEY ("connection_id") REFERENCES "calendar_connections" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "calendar_sync_logs_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "reputation_scores" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "usuario_id" TEXT NOT NULL,
-    "average_rating" REAL NOT NULL DEFAULT 0,
+    "average_rating" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "completed_jobs" INTEGER NOT NULL DEFAULT 0,
-    "on_time_percentage" REAL NOT NULL DEFAULT 0,
+    "on_time_percentage" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "review_count" INTEGER NOT NULL DEFAULT 0,
-    "total_rating_sum" REAL NOT NULL DEFAULT 0,
+    "total_rating_sum" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "completed_jobs_count" INTEGER NOT NULL DEFAULT 0,
-    "ranking_score" REAL NOT NULL DEFAULT 0,
+    "ranking_score" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "global_ranking" INTEGER,
-    "last_calculated" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
-    CONSTRAINT "reputation_scores_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "last_calculated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "reputation_scores_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "user_medals" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "usuario_id" TEXT NOT NULL,
     "medal_type" TEXT NOT NULL,
     "medal_name" TEXT NOT NULL,
     "medal_description" TEXT,
     "icon_url" TEXT,
-    "condition_value" REAL,
+    "condition_value" DOUBLE PRECISION,
     "condition_type" TEXT,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
-    "awarded_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "revoked_at" DATETIME,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
-    CONSTRAINT "user_medals_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "awarded_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "revoked_at" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "user_medals_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "audit_logs" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "usuario_id" TEXT,
     "accion" TEXT NOT NULL,
     "entidad_tipo" TEXT NOT NULL,
@@ -645,76 +675,182 @@ CREATE TABLE "audit_logs" (
     "user_agent" TEXT,
     "exito" BOOLEAN NOT NULL DEFAULT true,
     "error_mensaje" TEXT,
-    "creado_en" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "audit_logs_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "urgent_requests" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "client_id" TEXT NOT NULL,
     "description" TEXT NOT NULL,
-    "latitude" REAL,
-    "longitude" REAL,
-    "requested_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "latitude" DOUBLE PRECISION,
+    "longitude" DOUBLE PRECISION,
+    "requested_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "status" TEXT NOT NULL DEFAULT 'pending',
     "urgency_level" TEXT NOT NULL DEFAULT 'high',
     "special_requirements" TEXT,
-    "estimated_budget" REAL,
+    "estimated_budget" DOUBLE PRECISION,
     "service_category" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
-    CONSTRAINT "urgent_requests_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "urgent_requests_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "urgent_request_candidates" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "urgent_request_id" TEXT NOT NULL,
     "professional_id" TEXT NOT NULL,
-    "distance" REAL NOT NULL,
+    "distance" DOUBLE PRECISION NOT NULL,
     "estimated_arrival_time" INTEGER NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'available',
-    "contacted_at" DATETIME,
-    "responded_at" DATETIME,
+    "contacted_at" TIMESTAMP(3),
+    "responded_at" TIMESTAMP(3),
     "response_time" INTEGER,
-    "proposed_price" REAL,
+    "proposed_price" DOUBLE PRECISION,
     "notes" TEXT,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "urgent_request_candidates_urgent_request_id_fkey" FOREIGN KEY ("urgent_request_id") REFERENCES "urgent_requests" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "urgent_request_candidates_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "urgent_request_candidates_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "urgent_assignments" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "urgent_request_id" TEXT NOT NULL,
     "professional_id" TEXT NOT NULL,
-    "assigned_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "assigned_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "status" TEXT NOT NULL DEFAULT 'active',
-    "started_at" DATETIME,
-    "completed_at" DATETIME,
+    "started_at" TIMESTAMP(3),
+    "completed_at" TIMESTAMP(3),
     "completion_time" INTEGER,
-    "final_price" REAL,
+    "final_price" DOUBLE PRECISION,
     "notes" TEXT,
     "cancellation_reason" TEXT,
-    "cancelled_at" DATETIME,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL,
-    CONSTRAINT "urgent_assignments_urgent_request_id_fkey" FOREIGN KEY ("urgent_request_id") REFERENCES "urgent_requests" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "urgent_assignments_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "cancelled_at" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "urgent_assignments_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "urgent_pricing_rules" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "service_category" TEXT NOT NULL,
     "urgency_level" TEXT NOT NULL,
-    "base_price" REAL NOT NULL,
-    "urgency_multiplier" REAL NOT NULL DEFAULT 1.0,
+    "base_price" DOUBLE PRECISION NOT NULL,
+    "urgency_multiplier" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" DATETIME NOT NULL
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "urgent_pricing_rules_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "admin_users" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "hash_contrasena" TEXT NOT NULL,
+    "nombre" TEXT NOT NULL,
+    "apellido" TEXT,
+    "rol" TEXT NOT NULL DEFAULT 'moderator',
+    "permisos" TEXT,
+    "esta_activo" BOOLEAN NOT NULL DEFAULT true,
+    "ultimo_acceso" TIMESTAMP(3),
+    "intentos_fallidos" INTEGER NOT NULL DEFAULT 0,
+    "bloqueado_hasta" TIMESTAMP(3),
+    "creado_por" TEXT,
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "actualizado_en" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "admin_users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "categories" (
+    "id" TEXT NOT NULL,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "icono" TEXT,
+    "color" TEXT,
+    "orden" INTEGER NOT NULL DEFAULT 0,
+    "esta_activa" BOOLEAN NOT NULL DEFAULT true,
+    "requiere_verificacion" BOOLEAN NOT NULL DEFAULT false,
+    "meta" TEXT,
+    "creado_por" TEXT,
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "actualizado_en" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "categories_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "subcategories" (
+    "id" TEXT NOT NULL,
+    "category_id" TEXT NOT NULL,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "icono" TEXT,
+    "color" TEXT,
+    "orden" INTEGER NOT NULL DEFAULT 0,
+    "esta_activa" BOOLEAN NOT NULL DEFAULT true,
+    "requiere_verificacion" BOOLEAN NOT NULL DEFAULT false,
+    "precio_minimo" DOUBLE PRECISION,
+    "precio_maximo" DOUBLE PRECISION,
+    "precio_sugerido" DOUBLE PRECISION,
+    "meta" TEXT,
+    "creado_por" TEXT,
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "actualizado_en" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "subcategories_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "reports" (
+    "id" TEXT NOT NULL,
+    "titulo" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "tipo" TEXT NOT NULL,
+    "parametros" TEXT,
+    "fecha_inicio" TIMESTAMP(3),
+    "fecha_fin" TIMESTAMP(3),
+    "resultado" TEXT,
+    "generado_en" TIMESTAMP(3),
+    "expira_en" TIMESTAMP(3),
+    "estado" TEXT NOT NULL DEFAULT 'pending',
+    "error_mensaje" TEXT,
+    "generado_por" TEXT,
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "actualizado_en" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "reports_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "admin_logs" (
+    "id" TEXT NOT NULL,
+    "admin_id" TEXT NOT NULL,
+    "accion" TEXT NOT NULL,
+    "modulo" TEXT NOT NULL,
+    "entidad_tipo" TEXT,
+    "entidad_id" TEXT,
+    "descripcion" TEXT NOT NULL,
+    "detalles" TEXT,
+    "cambios" TEXT,
+    "ip_address" TEXT,
+    "user_agent" TEXT,
+    "session_id" TEXT,
+    "exito" BOOLEAN NOT NULL DEFAULT true,
+    "error_mensaje" TEXT,
+    "creado_en" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "admin_logs_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -769,7 +905,7 @@ CREATE INDEX "perfiles_profesionales_search_vector_idx" ON "perfiles_profesional
 CREATE INDEX "perfiles_profesionales_search_vector_especialidades_idx" ON "perfiles_profesionales"("search_vector_especialidades");
 
 -- CreateIndex
-CREATE INDEX "perfiles_profesionales_especialidad_zona_cobertura_calificacion_promedio_tarifa_hora_esta_disponible_estado_verificacion_idx" ON "perfiles_profesionales"("especialidad", "zona_cobertura", "calificacion_promedio", "tarifa_hora", "esta_disponible", "estado_verificacion");
+CREATE INDEX "perfiles_profesionales_especialidad_zona_cobertura_califica_idx" ON "perfiles_profesionales"("especialidad", "zona_cobertura", "calificacion_promedio", "tarifa_hora", "esta_disponible", "estado_verificacion");
 
 -- CreateIndex
 CREATE INDEX "perfiles_profesionales_calificacion_promedio_idx" ON "perfiles_profesionales"("calificacion_promedio");
@@ -883,6 +1019,21 @@ CREATE INDEX "notificaciones_programado_para_idx" ON "notificaciones"("programad
 CREATE INDEX "notificaciones_expira_en_idx" ON "notificaciones"("expira_en");
 
 -- CreateIndex
+CREATE INDEX "notificaciones_entity_type_entity_id_idx" ON "notificaciones"("entity_type", "entity_id");
+
+-- CreateIndex
+CREATE INDEX "notificaciones_usuario_id_entity_type_entity_id_idx" ON "notificaciones"("usuario_id", "entity_type", "entity_id");
+
+-- CreateIndex
+CREATE INDEX "notificaciones_usuario_id_tipo_esta_leido_idx" ON "notificaciones"("usuario_id", "tipo", "esta_leido");
+
+-- CreateIndex
+CREATE INDEX "notificaciones_usuario_id_creado_en_esta_leido_idx" ON "notificaciones"("usuario_id", "creado_en", "esta_leido");
+
+-- CreateIndex
+CREATE INDEX "notificaciones_expira_en_esta_leido_idx" ON "notificaciones"("expira_en", "esta_leido");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "notification_preferences_usuario_id_key" ON "notification_preferences"("usuario_id");
 
 -- CreateIndex
@@ -911,6 +1062,15 @@ CREATE INDEX "notification_metrics_enviada_entregada_leida_idx" ON "notification
 
 -- CreateIndex
 CREATE INDEX "notification_metrics_fecha_envio_idx" ON "notification_metrics"("fecha_envio");
+
+-- CreateIndex
+CREATE INDEX "notification_metrics_usuario_id_fecha_envio_idx" ON "notification_metrics"("usuario_id", "fecha_envio");
+
+-- CreateIndex
+CREATE INDEX "notification_metrics_canal_fecha_envio_idx" ON "notification_metrics"("canal", "fecha_envio");
+
+-- CreateIndex
+CREATE INDEX "notification_metrics_tipo_notificacion_canal_fecha_envio_idx" ON "notification_metrics"("tipo_notificacion", "canal", "fecha_envio");
 
 -- CreateIndex
 CREATE INDEX "cotizaciones_cliente_id_idx" ON "cotizaciones"("cliente_id");
@@ -1165,7 +1325,7 @@ CREATE INDEX "professionals_availability_recurrence_type_idx" ON "professionals_
 CREATE INDEX "professionals_availability_professional_id_is_active_idx" ON "professionals_availability"("professional_id", "is_active");
 
 -- CreateIndex
-CREATE INDEX "professionals_availability_professional_id_start_date_end_date_idx" ON "professionals_availability"("professional_id", "start_date", "end_date");
+CREATE INDEX "professionals_availability_professional_id_start_date_end_d_idx" ON "professionals_availability"("professional_id", "start_date", "end_date");
 
 -- CreateIndex
 CREATE INDEX "availability_slots_professional_id_idx" ON "availability_slots"("professional_id");
@@ -1403,3 +1563,267 @@ CREATE INDEX "urgent_pricing_rules_active_idx" ON "urgent_pricing_rules"("active
 
 -- CreateIndex
 CREATE UNIQUE INDEX "urgent_pricing_rules_service_category_urgency_level_key" ON "urgent_pricing_rules"("service_category", "urgency_level");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "admin_users_email_key" ON "admin_users"("email");
+
+-- CreateIndex
+CREATE INDEX "admin_users_rol_idx" ON "admin_users"("rol");
+
+-- CreateIndex
+CREATE INDEX "admin_users_esta_activo_idx" ON "admin_users"("esta_activo");
+
+-- CreateIndex
+CREATE INDEX "admin_users_ultimo_acceso_idx" ON "admin_users"("ultimo_acceso");
+
+-- CreateIndex
+CREATE INDEX "admin_users_bloqueado_hasta_idx" ON "admin_users"("bloqueado_hasta");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "categories_nombre_key" ON "categories"("nombre");
+
+-- CreateIndex
+CREATE INDEX "categories_esta_activa_idx" ON "categories"("esta_activa");
+
+-- CreateIndex
+CREATE INDEX "categories_orden_idx" ON "categories"("orden");
+
+-- CreateIndex
+CREATE INDEX "categories_requiere_verificacion_idx" ON "categories"("requiere_verificacion");
+
+-- CreateIndex
+CREATE INDEX "subcategories_category_id_idx" ON "subcategories"("category_id");
+
+-- CreateIndex
+CREATE INDEX "subcategories_esta_activa_idx" ON "subcategories"("esta_activa");
+
+-- CreateIndex
+CREATE INDEX "subcategories_orden_idx" ON "subcategories"("orden");
+
+-- CreateIndex
+CREATE INDEX "subcategories_requiere_verificacion_idx" ON "subcategories"("requiere_verificacion");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "subcategories_category_id_nombre_key" ON "subcategories"("category_id", "nombre");
+
+-- CreateIndex
+CREATE INDEX "reports_tipo_idx" ON "reports"("tipo");
+
+-- CreateIndex
+CREATE INDEX "reports_estado_idx" ON "reports"("estado");
+
+-- CreateIndex
+CREATE INDEX "reports_generado_en_idx" ON "reports"("generado_en");
+
+-- CreateIndex
+CREATE INDEX "reports_expira_en_idx" ON "reports"("expira_en");
+
+-- CreateIndex
+CREATE INDEX "reports_generado_por_idx" ON "reports"("generado_por");
+
+-- CreateIndex
+CREATE INDEX "admin_logs_admin_id_idx" ON "admin_logs"("admin_id");
+
+-- CreateIndex
+CREATE INDEX "admin_logs_accion_idx" ON "admin_logs"("accion");
+
+-- CreateIndex
+CREATE INDEX "admin_logs_modulo_idx" ON "admin_logs"("modulo");
+
+-- CreateIndex
+CREATE INDEX "admin_logs_entidad_tipo_entidad_id_idx" ON "admin_logs"("entidad_tipo", "entidad_id");
+
+-- CreateIndex
+CREATE INDEX "admin_logs_creado_en_idx" ON "admin_logs"("creado_en");
+
+-- CreateIndex
+CREATE INDEX "admin_logs_exito_idx" ON "admin_logs"("exito");
+
+-- CreateIndex
+CREATE INDEX "admin_logs_ip_address_idx" ON "admin_logs"("ip_address");
+
+-- AddForeignKey
+ALTER TABLE "failed_attempts" ADD CONSTRAINT "failed_attempts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "usuarios"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "perfiles_profesionales" ADD CONSTRAINT "perfiles_profesionales_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "servicios" ADD CONSTRAINT "servicios_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "servicios" ADD CONSTRAINT "servicios_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "servicios" ADD CONSTRAINT "servicios_servicio_recurrente_id_fkey" FOREIGN KEY ("servicio_recurrente_id") REFERENCES "servicios_recurrrentes"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "resenas" ADD CONSTRAINT "resenas_servicio_id_fkey" FOREIGN KEY ("servicio_id") REFERENCES "servicios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "resenas" ADD CONSTRAINT "resenas_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "mensajes" ADD CONSTRAINT "mensajes_remitente_id_fkey" FOREIGN KEY ("remitente_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "mensajes" ADD CONSTRAINT "mensajes_destinatario_id_fkey" FOREIGN KEY ("destinatario_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "disponibilidad" ADD CONSTRAINT "disponibilidad_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "disponibilidad" ADD CONSTRAINT "disponibilidad_reservado_por_fkey" FOREIGN KEY ("reservado_por") REFERENCES "usuarios"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "disponibilidad" ADD CONSTRAINT "disponibilidad_servicio_id_fkey" FOREIGN KEY ("servicio_id") REFERENCES "servicios"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "notificaciones" ADD CONSTRAINT "notificaciones_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "notification_preferences" ADD CONSTRAINT "notification_preferences_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "notification_metrics" ADD CONSTRAINT "notification_metrics_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cotizaciones" ADD CONSTRAINT "cotizaciones_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cotizacion_respuestas" ADD CONSTRAINT "cotizacion_respuestas_cotizacion_id_fkey" FOREIGN KEY ("cotizacion_id") REFERENCES "cotizaciones"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cotizacion_respuestas" ADD CONSTRAINT "cotizacion_respuestas_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "verification_requests" ADD CONSTRAINT "verification_requests_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "pagos" ADD CONSTRAINT "pagos_servicio_id_fkey" FOREIGN KEY ("servicio_id") REFERENCES "servicios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "pagos" ADD CONSTRAINT "pagos_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "pagos" ADD CONSTRAINT "pagos_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "pagos" ADD CONSTRAINT "pagos_commission_setting_id_fkey" FOREIGN KEY ("commission_setting_id") REFERENCES "commission_settings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cuentas_bancarias" ADD CONSTRAINT "cuentas_bancarias_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "retiros" ADD CONSTRAINT "retiros_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "retiros" ADD CONSTRAINT "retiros_cuenta_bancaria_id_fkey" FOREIGN KEY ("cuenta_bancaria_id") REFERENCES "cuentas_bancarias"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "transactions_log" ADD CONSTRAINT "transactions_log_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "payouts" ADD CONSTRAINT "payouts_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "payouts" ADD CONSTRAINT "payouts_servicio_id_fkey" FOREIGN KEY ("servicio_id") REFERENCES "servicios"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "servicios_recurrrentes" ADD CONSTRAINT "servicios_recurrrentes_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "servicios_recurrrentes" ADD CONSTRAINT "servicios_recurrrentes_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "conversations" ADD CONSTRAINT "conversations_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "conversations" ADD CONSTRAINT "conversations_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "messages" ADD CONSTRAINT "messages_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "conversations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "messages" ADD CONSTRAINT "messages_sender_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "favoritos" ADD CONSTRAINT "favoritos_cliente_id_fkey" FOREIGN KEY ("cliente_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "favoritos" ADD CONSTRAINT "favoritos_profesional_id_fkey" FOREIGN KEY ("profesional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "logros_usuario" ADD CONSTRAINT "logros_usuario_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "logros_usuario" ADD CONSTRAINT "logros_usuario_logro_id_fkey" FOREIGN KEY ("logro_id") REFERENCES "logros"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "professionals_availability" ADD CONSTRAINT "professionals_availability_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "availability_slots" ADD CONSTRAINT "availability_slots_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "availability_slots" ADD CONSTRAINT "availability_slots_availability_config_id_fkey" FOREIGN KEY ("availability_config_id") REFERENCES "professionals_availability"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "availability_slots" ADD CONSTRAINT "availability_slots_booked_by_fkey" FOREIGN KEY ("booked_by") REFERENCES "usuarios"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "appointments" ADD CONSTRAINT "appointments_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "appointments" ADD CONSTRAINT "appointments_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "appointments" ADD CONSTRAINT "appointments_slot_id_fkey" FOREIGN KEY ("slot_id") REFERENCES "availability_slots"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "appointments" ADD CONSTRAINT "appointments_availability_config_id_fkey" FOREIGN KEY ("availability_config_id") REFERENCES "professionals_availability"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "appointments" ADD CONSTRAINT "appointments_service_id_fkey" FOREIGN KEY ("service_id") REFERENCES "servicios"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "blocked_slots" ADD CONSTRAINT "blocked_slots_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "calendar_connections" ADD CONSTRAINT "calendar_connections_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "usuarios"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "calendar_sync_logs" ADD CONSTRAINT "calendar_sync_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "usuarios"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "calendar_sync_logs" ADD CONSTRAINT "calendar_sync_logs_connection_id_fkey" FOREIGN KEY ("connection_id") REFERENCES "calendar_connections"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "reputation_scores" ADD CONSTRAINT "reputation_scores_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_medals" ADD CONSTRAINT "user_medals_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "urgent_requests" ADD CONSTRAINT "urgent_requests_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "urgent_request_candidates" ADD CONSTRAINT "urgent_request_candidates_urgent_request_id_fkey" FOREIGN KEY ("urgent_request_id") REFERENCES "urgent_requests"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "urgent_request_candidates" ADD CONSTRAINT "urgent_request_candidates_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "urgent_assignments" ADD CONSTRAINT "urgent_assignments_urgent_request_id_fkey" FOREIGN KEY ("urgent_request_id") REFERENCES "urgent_requests"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "urgent_assignments" ADD CONSTRAINT "urgent_assignments_professional_id_fkey" FOREIGN KEY ("professional_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "subcategories" ADD CONSTRAINT "subcategories_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "admin_logs" ADD CONSTRAINT "admin_logs_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "admin_users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
