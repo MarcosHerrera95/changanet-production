@@ -77,7 +77,7 @@
     "lint-staged": "^13.3.0",
     "nodemon": "^3.0.1",
     "prettier": "^3.0.1",
-    "prisma": "^6.17.0",
+    "prisma": "^7.0.1",
     "prisma-erd-generator": "^2.1.0",
     "supertest": "^6.3.3"
   }
