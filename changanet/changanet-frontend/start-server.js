@@ -3,7 +3,7 @@
 // Script para iniciar el servidor con el puerto correcto
 // Usa la variable de entorno PORT de Render o el puerto 3000 por defecto
 
-const { exec } = require('child_process');
+import { exec } from 'child_process';
 
 const port = process.env.PORT || 3000;
 
