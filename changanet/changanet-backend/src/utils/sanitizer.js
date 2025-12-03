@@ -3,12 +3,10 @@
  * Implementa medidas de seguridad para Gestión de Perfiles Profesionales
  */
 
-const DOMPurify = require('dompurify');
-const { JSDOM } = require('jsdom');
+const DOMPurify = require('isomorphic-dompurify');
 
-// Configurar DOMPurify con JSDOM para server-side
-const window = new JSDOM('').window;
-const DOMPurifyInstance = DOMPurify(window);
+// Usar isomorphic-dompurify que funciona tanto en navegador como en Node.js
+const DOMPurifyInstance = DOMPurify;
 
 /**
  * Sanitiza entrada de texto para prevenir XSS
