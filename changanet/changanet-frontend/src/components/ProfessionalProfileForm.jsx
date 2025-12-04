@@ -43,22 +43,32 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
   // Actualizar formData cuando cambien los datos iniciales
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
-      setFormData(prev => ({
-        ...prev,
+      // Solo actualizar si initialData es diferente al estado actual
+      const isDifferent = JSON.stringify({
+        ...formData,
+        especialidades: Array.isArray(formData.especialidades) ? formData.especialidades : [],
+      }) !== JSON.stringify({
+        ...initialData,
         especialidades: Array.isArray(initialData.especialidades) ? initialData.especialidades : [],
-        anos_experiencia: initialData.anos_experiencia || '',
-        zona_cobertura: initialData.zona_cobertura || '',
-        latitud: initialData.latitud || null,
-        longitud: initialData.longitud || null,
-        tipo_tarifa: initialData.tipo_tarifa || 'hora',
-        tarifa_hora: initialData.tarifa_hora || '',
-        tarifa_servicio: initialData.tarifa_servicio || '',
-        tarifa_convenio: initialData.tarifa_convenio || '',
-        descripcion: initialData.descripcion || '',
-        url_foto_perfil: initialData.url_foto_perfil || '',
-        url_foto_portada: initialData.url_foto_portada || '',
-        esta_disponible: initialData.esta_disponible ?? true
-      }));
+      });
+      if (isDifferent) {
+        setFormData(prev => ({
+          ...prev,
+          especialidades: Array.isArray(initialData.especialidades) ? initialData.especialidades : [],
+          anos_experiencia: initialData.anos_experiencia || '',
+          zona_cobertura: initialData.zona_cobertura || '',
+          latitud: initialData.latitud || null,
+          longitud: initialData.longitud || null,
+          tipo_tarifa: initialData.tipo_tarifa || 'hora',
+          tarifa_hora: initialData.tarifa_hora || '',
+          tarifa_servicio: initialData.tarifa_servicio || '',
+          tarifa_convenio: initialData.tarifa_convenio || '',
+          descripcion: initialData.descripcion || '',
+          url_foto_perfil: initialData.url_foto_perfil || '',
+          url_foto_portada: initialData.url_foto_portada || '',
+          esta_disponible: initialData.esta_disponible ?? true
+        }));
+      }
     }
   }, [initialData]);
 
@@ -112,6 +122,7 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
   };
 
   // Manejar envío del formulario
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -149,9 +160,21 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
       }
 
       // Llamar a la API para actualizar el perfil
-      await updateProfile(submitData);
+      const result = await updateProfile(submitData);
+
+      // Refrescar la foto de perfil si fue actualizada
+      if (result && result.profile) {
+        setFormData(prev => ({
+          ...prev,
+          url_foto_perfil: result.profile.url_foto_perfil || prev.url_foto_perfil,
+          url_foto_portada: result.profile.url_foto_portada || prev.url_foto_portada,
+        }));
+      }
 
       onSuccess('Perfil profesional actualizado exitosamente');
+
+      // Hacer rollback visual (scroll hacia arriba)
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error('Error updating profile:', error);
       onError(error.message || 'Error al actualizar el perfil');

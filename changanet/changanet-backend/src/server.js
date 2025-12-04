@@ -618,6 +618,10 @@ app.use('/api/sync/calendar', calendarSyncRoutes);
 const urgentRoutes = require('./routes/urgentRoutes');
 app.use('/api', urgentRoutes);
 
+// Rutas de geocodificación (nuevo proxy)
+const geocodeRoutes = require('./routes/geocodeRoutes');
+app.use('/api/geocode', geocodeRoutes);
+
 /**
  * Configuración de eventos de Socket.IO para chat en tiempo real.
  * Implementa sistema completo de mensajería con conversaciones y mensajes.
@@ -1064,4 +1068,4 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Exportar app para pruebas
-module.exports = app; 
+module.exports = app;
