@@ -9,7 +9,12 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    include: ['react', 'react-dom']
+    include: [
+      'react', 
+      'react-dom',
+      '@googlemaps/js-api-loader'
+    ],
+    exclude: []
   },
   build: {
     // Optimize build for production
@@ -47,7 +52,7 @@ export default defineConfig({
     host: 'localhost',
     port: 5175,
     deps: {
-      inline: ['react', 'react-dom']
+      inline: ['react', 'react-dom', '@googlemaps/js-api-loader']
     },
     headers: {
       // Headers de desarrollo - CSP movida a meta tag en HTML para mejor control

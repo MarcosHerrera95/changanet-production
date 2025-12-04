@@ -139,7 +139,8 @@ export class AuthProvider extends React.Component {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
-        cache: 'no-cache'
+        cache: 'no-cache',
+        credentials: 'include' // Incluir cookies en la respuesta
       });
 
       console.log('AuthContext - loginWithEmail: Response status:', response.status);
@@ -160,6 +161,7 @@ export class AuthProvider extends React.Component {
       const data = await response.json();
       console.log('AuthContext - loginWithEmail: Success response data:', data);
 
+      // El token viene en la respuesta (almacenado en cookies httpOnly en el backend)
       if (data.token && data.user) {
         this.login(data.user, data.token);
       }
@@ -187,7 +189,8 @@ export class AuthProvider extends React.Component {
       const response = await fetch(`${apiBaseUrl}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, rol: role })
+        body: JSON.stringify({ name, email, password, rol: role }),
+        credentials: 'include' // Incluir cookies en la respuesta
       });
 
       // Verificar que la respuesta sea válida antes de parsear JSON

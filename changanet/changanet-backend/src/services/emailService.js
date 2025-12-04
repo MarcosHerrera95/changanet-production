@@ -403,6 +403,22 @@ exports.sendVerificationEmail = async (email, verificationToken) => {
 
 exports.sendEmail = async (to, subject, html) => {
   const sgMail = require('@sendgrid/mail');
+  const logger = require('./logger');
+
+  // Validar que la API key esté configurada
+  if (!process.env.SENDGRID_API_KEY) {
+    logger.warn('SendGrid API key not configured - email will not be sent', {
+      service: 'email',
+      to: to,
+      subject: subject
+    });
+    // En desarrollo, no fallar si no hay API key
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📧 [DEV MODE] Email no enviado a ${to}: "${subject}"`);
+      return;
+    }
+    throw new Error('SendGrid API key not configured');
+  }
 
   // Configurar API key
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -410,7 +426,7 @@ exports.sendEmail = async (to, subject, html) => {
   const msg = {
     to: to,
     from: {
-      email: process.env.FROM_EMAIL,
+      email: process.env.FROM_EMAIL || 'noreply@changanet.com',
       name: 'Changánet'
     },
     subject: subject,
@@ -419,12 +435,28 @@ exports.sendEmail = async (to, subject, html) => {
 
   try {
     await sgMail.send(msg);
+    logger.info('Email sent successfully', {
+      service: 'email',
+      to: to,
+      subject: subject
+    });
     console.log(`✅ Email enviado exitosamente a ${to}`);
   } catch (error) {
-    console.error('❌ Error al enviar email:', error);
-    if (error.response) {
-      console.error('Detalles del error:', error.response.body);
+    logger.error('Failed to send email', {
+      service: 'email',
+      to: to,
+      subject: subject,
+      error: error.message,
+      statusCode: error.code
+    });
+    
+    // En desarrollo, no fallar por errores de SendGrid
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`⚠️  Email no pudo ser enviado a ${to}: ${error.message}`);
+      return;
     }
+    
+    // En producción, lanzar el error
     throw error;
   }
 };
