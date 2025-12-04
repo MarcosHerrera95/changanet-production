@@ -12,8 +12,10 @@ const GoogleLoginButton = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { loginWithGoogle } = useAuth();
-  // Usar el proxy de Vite para evitar problemas de CORS
-  const apiUrl = '/api/auth/google-login';
+  // Construir la URL del backend usando la variable de entorno VITE_BACKEND_URL
+  // Si no está definida, cae a la ruta relativa (útil en dev con proxy Vite)
+  const backendBase = import.meta.env.VITE_BACKEND_URL ? import.meta.env.VITE_BACKEND_URL.replace(/\/$/, '') : '';
+  const apiUrl = backendBase ? `${backendBase}/api/auth/google-login` : '/api/auth/google-login';
   console.log('GoogleLoginButton: Using API URL:', apiUrl);
 
   const handleGoogleLogin = async () => {
@@ -57,11 +59,22 @@ const GoogleLoginButton = () => {
       
       const response = await fetch(apiUrl, {
         method: 'POST',
+        credentials: 'include', // importante para cookies httpOnly
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
       });
+
+      // Comprobar content-type antes de intentar parsear JSON
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        // Leemos texto para dar una pista al desarrollador (no más de 400 chars)
+        const text = await response.text().catch(() => '');
+        // Si recibimos HTML (doctype), es muy probable que la petición haya ido al frontend
+        const truncated = text ? text.slice(0, 400) : '';
+        throw new Error(`Respuesta inesperada (no JSON). Posible URL de backend incorrecta o error en servidor. Body starts: ${truncated}`);
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Error de red o backend inaccesible' }));
