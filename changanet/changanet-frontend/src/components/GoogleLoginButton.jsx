@@ -16,6 +16,11 @@ const GoogleLoginButton = () => {
   // Si no está definida, cae a la ruta relativa (útil en dev con proxy Vite)
   const backendBase = import.meta.env.VITE_BACKEND_URL ? import.meta.env.VITE_BACKEND_URL.replace(/\/$/, '') : '';
   const apiUrl = backendBase ? `${backendBase}/api/auth/google-login` : '/api/auth/google-login';
+  const isProd = import.meta.env.MODE === 'production' || window.location.hostname.includes('onrender');
+  const missingBackendUrl = isProd && !import.meta.env.VITE_BACKEND_URL;
+  if (missingBackendUrl) {
+    console.error('[GoogleLoginButton] FALTA la variable VITE_BACKEND_URL en producción. El login NO funcionará.');
+  }
   console.log('GoogleLoginButton: Using API URL:', apiUrl);
 
   const handleGoogleLogin = async () => {
@@ -118,7 +123,7 @@ const GoogleLoginButton = () => {
     <div>
       <button
         onClick={handleGoogleLogin}
-        disabled={loading}
+        disabled={loading || missingBackendUrl}
         style={{
           width: '100%',
           minHeight: '44px',
@@ -182,6 +187,13 @@ const GoogleLoginButton = () => {
           </div>
         )}
       </button>
+      {missingBackendUrl && (
+        <p style={{ color: 'red', fontSize: '14px', marginTop: '8px', fontWeight: 'bold' }}>
+          Error crítico: FALTA la variable <code>VITE_BACKEND_URL</code> en producción. El login no funcionará.<br />
+          Debes configurarla en Render: <br />
+          <code>VITE_BACKEND_URL=https://changanet-backend-xxxxx.onrender.com</code>
+        </p>
+      )}
       {error && <p style={{ color: 'red', fontSize: '14px', marginTop: '8px' }}>Error: {error}</p>}
       <style>
         {`
