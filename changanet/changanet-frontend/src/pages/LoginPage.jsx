@@ -108,14 +108,25 @@ const LoginPage = () => {
                   {...register('password', {
                     required: 'La contraseña es requerida',
                     minLength: {
-                      value: 6,
-                      message: 'La contraseña debe tener al menos 6 caracteres',
+                      value: 10,
+                      message: 'La contraseña debe tener al menos 10 caracteres',
                     },
                   })}
                 />
                 {errors.password && (
                   <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
                 )}
+              </div>
+              {/* Recomendaciones para la contraseña */}
+              <div className="mt-2 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-xl p-3">
+                <strong>Recomendaciones para tu contraseña:</strong>
+                <ul className="list-disc ml-5 mt-1">
+                  <li>Mínimo 10 caracteres</li>
+                  <li>Al menos una letra mayúscula</li>
+                  <li>Al menos una letra minúscula</li>
+                  <li>Al menos un número</li>
+                  <li>Al menos un caracter especial (ej: !@#$%^&*)</li>
+                </ul>
               </div>
             </div>
 

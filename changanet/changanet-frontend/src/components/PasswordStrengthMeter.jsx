@@ -26,7 +26,7 @@ const PasswordStrengthMeter = ({ password, showDetails = true }) => {
 
     // Validación básica de longitud
     if (password.length < 8) {
-      feedback.warnings.push('Debe tener al menos 8 caracteres');
+      feedback.warnings.push('Debe tener al menos 10 caracteres');
     }
 
     if (password.length < 6) {
@@ -109,7 +109,7 @@ const PasswordStrengthMeter = ({ password, showDetails = true }) => {
       feedback.label = 'Muy débil';
       feedback.color = 'text-red-600';
       feedback.bgColor = 'bg-red-100';
-      feedback.suggestions.push('Usa al menos 8 caracteres');
+      feedback.suggestions.push('Usa al menos 10 caracteres');
       feedback.suggestions.push('Agrega números y símbolos');
     } else if (score < 50) {
       feedback.label = 'Débil';
