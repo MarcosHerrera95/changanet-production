@@ -325,6 +325,7 @@ exports.register = async (req, res) => {
     res.status(201).json({
       message: 'Usuario registrado exitosamente. Revisa tu email para verificar la cuenta.',
       user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol }, // Datos públicos del usuario
+      token: accessToken, // Incluir access token en la respuesta para compatibilidad con frontend
       requiresVerification: true // Indica que necesita verificar email
     });
   } catch (error) {
@@ -604,7 +605,8 @@ exports.login = async (req, res) => {
     // Responder con datos básicos del usuario (sin tokens en el body)
     res.status(200).json({
       message: 'Login exitoso.',
-      user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol } // Datos públicos del usuario
+      user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol }, // Datos públicos del usuario
+      token: accessToken // Incluir access token en la respuesta para compatibilidad con frontend
     });
   } catch (error) {
     // Registrar error de login para debugging

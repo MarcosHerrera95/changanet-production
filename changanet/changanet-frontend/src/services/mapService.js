@@ -3,14 +3,10 @@
  * Implementa sección 14 del PRD: Geolocalización y Mapa Interactivo
  * Maneja geocodificación, autocompletado y cálculo de distancias
  * REQ-09 (zona de cobertura), REQ-12 (radio de búsqueda), REQ-15 (cálculo de distancia)
- * Usa la nueva API funcional de @googlemaps/js-api-loader
+ * Carga Google Maps API como script global
  */
 
-import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import { GOOGLE_MAPS_CONFIG } from '../config/googleMapsConfig';
-
-// Configurar opciones globales de Google Maps al cargar el módulo
-setOptions(GOOGLE_MAPS_CONFIG);
 
 // Estado del servicio
 let isInitialized = false;
@@ -21,7 +17,47 @@ let googleMapsInstance = null;
 const distanceCache = new Map();
 
 /**
- * Inicializa Google Maps API usando la nueva API funcional
+ * Carga Google Maps API como un script global
+ * Esta es una alternativa más compatible que la API funcional
+ */
+const loadGoogleMapsScript = async () => {
+  return new Promise((resolve, reject) => {
+    // Si ya está cargado en window.google.maps, resolver inmediatamente
+    if (window.google && window.google.maps) {
+      resolve(window.google.maps);
+      return;
+    }
+
+    // Crear el script de Google Maps
+    const script = document.createElement('script');
+    const apiKey = GOOGLE_MAPS_CONFIG.apiKey;
+    
+    if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
+      console.warn('Google Maps API key not configured');
+      reject(new Error('Google Maps API key not configured'));
+      return;
+    }
+
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry,distance_matrix`;
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => {
+      console.log('✅ Google Maps API cargado exitosamente');
+      resolve(window.google.maps);
+    };
+
+    script.onerror = () => {
+      console.error('❌ Error cargando Google Maps API');
+      reject(new Error('Failed to load Google Maps API'));
+    };
+
+    document.head.appendChild(script);
+  });
+};
+
+/**
+ * Inicializa Google Maps API
  */
 const initializeGoogleMaps = async () => {
   // Si ya está inicializado, devolver la instancia
@@ -36,21 +72,18 @@ const initializeGoogleMaps = async () => {
 
   // Crear la promesa de inicialización
   initializationPromise = (async () => {
-    const apiKey = GOOGLE_MAPS_CONFIG.apiKey;
-    console.log('Google Maps API Key:', apiKey ? `Present (starts with: ${apiKey.substring(0, 10)}...)` : 'Missing');
-    console.log('API Key length:', apiKey ? apiKey.length : 0);
-    console.log('API Key format check:', apiKey && apiKey.startsWith('AIza') ? 'Valid format' : 'Invalid format');
-
-    if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
-      console.warn('Google Maps API key not configured, using fallback mode');
-      isInitialized = true; // Mark as initialized to prevent retries
+    try {
+      console.log('🔄 Inicializando Google Maps API...');
+      const mapsApi = await loadGoogleMapsScript();
+      isInitialized = true;
+      googleMapsInstance = { maps: mapsApi };
+      console.log('✅ Google Maps API inicializado correctamente');
+      return googleMapsInstance;
+    } catch (error) {
+      console.error('❌ Error inicializando Google Maps:', error);
+      isInitialized = true; // Marcar como inicializado para evitar reintentos
       return null;
     }
-
-    isInitialized = true;
-    googleMapsInstance = { maps: window.google?.maps };
-    console.log('Google Maps API initialized successfully');
-    return googleMapsInstance;
   })();
 
   return initializationPromise;
