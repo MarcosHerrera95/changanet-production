@@ -63,7 +63,27 @@ const ProfessionalProfile = () => {
 
             {/* Formulario principal */}
             <ProfessionalProfileForm
-              initialData={profile}
+              initialData={profile && typeof profile === 'object' ? {
+                ...profile?.perfil,
+                ...profile?.usuario,
+                especialidades: Array.isArray(profile?.perfil?.especialidades)
+                  ? profile.perfil.especialidades
+                  : (profile?.perfil?.especialidades ? JSON.parse(profile.perfil.especialidades) : []),
+              } : {
+                especialidades: [],
+                anos_experiencia: '',
+                zona_cobertura: '',
+                latitud: null,
+                longitud: null,
+                tipo_tarifa: 'hora',
+                tarifa_hora: '',
+                tarifa_servicio: '',
+                tarifa_convenio: '',
+                descripcion: '',
+                url_foto_perfil: '',
+                url_foto_portada: '',
+                esta_disponible: true
+              }}
               onSuccess={handleSuccess}
               onError={handleError}
             />

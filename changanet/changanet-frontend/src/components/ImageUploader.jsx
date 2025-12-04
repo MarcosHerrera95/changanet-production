@@ -43,36 +43,12 @@ const ImageUploader = ({ profilePhoto, coverPhoto, onProfilePhotoChange, onCover
       reader.onload = (e) => {
         const previewUrl = e.target.result;
         if (type === 'profile') {
-          onProfilePhotoChange(previewUrl);
+          onProfilePhotoChange(file, previewUrl);
         } else {
-          onCoverPhotoChange(previewUrl);
+          onCoverPhotoChange(file, previewUrl);
         }
       };
       reader.readAsDataURL(file);
-
-      // Aquí iría la subida real al backend
-      // const formData = new FormData();
-      // formData.append('foto', file);
-      // formData.append('foto_tipo', type);
-
-      // const response = await fetch('/api/professionals/upload-photo', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('changanet_token')}`
-      //   },
-      //   body: formData
-      // });
-
-      // if (response.ok) {
-      //   const data = await response.json();
-      //   if (type === 'profile') {
-      //     onProfilePhotoChange(data.data.url);
-      //   } else {
-      //     onCoverPhotoChange(data.data.url);
-      //   }
-      // } else {
-      //   throw new Error('Error al subir la imagen');
-      // }
 
       // Simular subida exitosa
       setTimeout(() => {
@@ -110,9 +86,9 @@ const ImageUploader = ({ profilePhoto, coverPhoto, onProfilePhotoChange, onCover
 
   const removeImage = (type) => {
     if (type === 'profile') {
-      onProfilePhotoChange('');
+      onProfilePhotoChange(null, '');
     } else {
-      onCoverPhotoChange('');
+      onCoverPhotoChange(null, '');
     }
     setErrors(prev => ({ ...prev, [type]: '' }));
   };

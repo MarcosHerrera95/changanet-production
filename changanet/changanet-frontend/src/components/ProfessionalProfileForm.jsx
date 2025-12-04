@@ -12,18 +12,11 @@ import { useProfile } from '../hooks/useProfile';
 const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
   const { updateProfile } = useProfile();
   const [formData, setFormData] = useState({
-    // REQ-07: Especialidades múltiples
-    especialidades: initialData.especialidades || [],
-
-    // REQ-08: Años de experiencia
+    especialidades: Array.isArray(initialData.especialidades) ? initialData.especialidades : [],
     anos_experiencia: initialData.anos_experiencia || '',
-
-    // REQ-09: Zona de cobertura con coordenadas GPS
     zona_cobertura: initialData.zona_cobertura || '',
     latitud: initialData.latitud || null,
     longitud: initialData.longitud || null,
-
-    // REQ-10: Sistema flexible de tarifas
     tipo_tarifa: initialData.tipo_tarifa || 'hora',
     tarifa_hora: initialData.tarifa_hora || '',
     tarifa_servicio: initialData.tarifa_servicio || '',
@@ -36,6 +29,10 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
     url_foto_perfil: initialData.url_foto_perfil || '',
     url_foto_portada: initialData.url_foto_portada || '',
 
+    // Archivos de fotos para subir
+    file_foto_perfil: null,
+    file_foto_portada: null,
+
     // Disponibilidad
     esta_disponible: initialData.esta_disponible ?? true
   });
@@ -46,8 +43,9 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
   // Actualizar formData cuando cambien los datos iniciales
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
-      setFormData({
-        especialidades: initialData.especialidades || [],
+      setFormData(prev => ({
+        ...prev,
+        especialidades: Array.isArray(initialData.especialidades) ? initialData.especialidades : [],
         anos_experiencia: initialData.anos_experiencia || '',
         zona_cobertura: initialData.zona_cobertura || '',
         latitud: initialData.latitud || null,
@@ -60,7 +58,7 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
         url_foto_perfil: initialData.url_foto_perfil || '',
         url_foto_portada: initialData.url_foto_portada || '',
         esta_disponible: initialData.esta_disponible ?? true
-      });
+      }));
     }
   }, [initialData]);
 
@@ -108,7 +106,6 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
   // Manejar cambios en campos simples
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Limpiar error del campo si existe
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: null }));
     }
@@ -138,10 +135,18 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
         tarifa_servicio: formData.tipo_tarifa === 'servicio' ? parseFloat(formData.tarifa_servicio) : null,
         tarifa_convenio: formData.tipo_tarifa === 'convenio' ? formData.tarifa_convenio.trim() : null,
         descripcion: formData.descripcion.trim(),
-        url_foto_perfil: formData.url_foto_perfil,
-        url_foto_portada: formData.url_foto_portada,
         esta_disponible: formData.esta_disponible
       };
+
+      // Adjuntar archivos reales si existen
+      if (formData.file_foto_perfil instanceof File) {
+        submitData.foto = formData.file_foto_perfil;
+        submitData.foto_tipo = 'perfil';
+      }
+      if (formData.file_foto_portada instanceof File) {
+        submitData.foto = formData.file_foto_portada;
+        submitData.foto_tipo = 'portada';
+      }
 
       // Llamar a la API para actualizar el perfil
       await updateProfile(submitData);
@@ -163,8 +168,14 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
         <ImageUploader
           profilePhoto={formData.url_foto_perfil}
           coverPhoto={formData.url_foto_portada}
-          onProfilePhotoChange={(url) => handleChange('url_foto_perfil', url)}
-          onCoverPhotoChange={(url) => handleChange('url_foto_portada', url)}
+          onProfilePhotoChange={(file, url) => {
+            handleChange('file_foto_perfil', file);
+            handleChange('url_foto_perfil', url);
+          }}
+          onCoverPhotoChange={(file, url) => {
+            handleChange('file_foto_portada', file);
+            handleChange('url_foto_portada', url);
+          }}
         />
       </div>
 

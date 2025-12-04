@@ -35,7 +35,10 @@ const SpecialtySelector = ({ value = [], onChange, error, maxSelections = 5 }) =
 
   // Actualizar estado local cuando cambie el valor externo
   useEffect(() => {
-    setSelectedSpecialties(value);
+    // Solo actualizar si value es diferente al estado local
+    if (Array.isArray(value) && JSON.stringify(value) !== JSON.stringify(selectedSpecialties)) {
+      setSelectedSpecialties(value);
+    }
   }, [value]);
 
   // Notificar cambios al componente padre
