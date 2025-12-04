@@ -21,7 +21,7 @@ const ClientSignupPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const { login, user } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   // Verificar si el usuario ya está autenticado
@@ -112,6 +112,17 @@ const ClientSignupPage = () => {
           </div>
         )}
 
+        {/* Indicaciones de requisitos */}
+        <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-700 p-4 rounded-2xl flex items-start">
+          <span className="text-blue-500 mr-3">ℹ️</span>
+          <div className="text-sm">
+            <strong>Requisitos para el registro:</strong>
+            <ul className="list-disc ml-5 mt-1">
+              <li>El correo electrónico debe tener formato válido (ejemplo: usuario@dominio.com).</li>
+              <li>La contraseña debe tener al menos 10 caracteres, incluir una mayúscula, una minúscula, un número y un caracter especial.</li>
+            </ul>
+          </div>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="name" className="block text-gray-700 font-medium mb-2">
@@ -191,9 +202,20 @@ const ClientSignupPage = () => {
                 value={formData.password}
                 onChange={handleInputChange}
                 className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 text-gray-700 placeholder-gray-400"
-                placeholder="Mínimo 6 caracteres"
-                minLength="6"
+                placeholder="Mínimo 10 caracteres, mayúscula, minúscula, número y caracter especial"
+                minLength="10"
               />
+            </div>
+            {/* Recomendaciones para la contraseña */}
+            <div className="mt-2 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-xl p-3">
+              <strong>Recomendaciones para tu contraseña:</strong>
+              <ul className="list-disc ml-5 mt-1">
+                <li>Mínimo 10 caracteres</li>
+                <li>Al menos una letra mayúscula</li>
+                <li>Al menos una letra minúscula</li>
+                <li>Al menos un número</li>
+                <li>Al menos un caracter especial (ej: !@#$%^&*)</li>
+              </ul>
             </div>
           </div>
 

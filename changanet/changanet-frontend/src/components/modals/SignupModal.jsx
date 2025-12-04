@@ -122,9 +122,55 @@ const SignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-12 pr-4 py-4 bg-[#F9FBFD] border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#E30613] focus:border-transparent transition-all duration-200 text-[#1F2937] placeholder-[#6B7280]"
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder="Mínimo 10 caracteres, mayúscula, minúscula, número y caracter especial"
                   required
                 />
+              </div>
+              {/* Requisitos dinámicos para la contraseña */}
+              <div className="mt-2 text-xs bg-gray-50 border border-gray-200 rounded-xl p-3">
+                <strong className="text-gray-700">Requisitos para tu contraseña:</strong>
+                <ul className="mt-2 space-y-1">
+                  <li className="flex items-center gap-2">
+                    {password.length >= 10 ? (
+                      <span className="text-green-600">✔️</span>
+                    ) : (
+                      <span className="text-gray-400">⬜</span>
+                    )}
+                    <span>Mínimo 10 caracteres</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    {/[A-Z]/.test(password) ? (
+                      <span className="text-green-600">✔️</span>
+                    ) : (
+                      <span className="text-gray-400">⬜</span>
+                    )}
+                    <span>Al menos una letra mayúscula</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    {/[a-z]/.test(password) ? (
+                      <span className="text-green-600">✔️</span>
+                    ) : (
+                      <span className="text-gray-400">⬜</span>
+                    )}
+                    <span>Al menos una letra minúscula</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    {/\d/.test(password) ? (
+                      <span className="text-green-600">✔️</span>
+                    ) : (
+                      <span className="text-gray-400">⬜</span>
+                    )}
+                    <span>Al menos un número</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    {/[!@#$%^&*(),.?":{}|<>]/.test(password) ? (
+                      <span className="text-green-600">✔️</span>
+                    ) : (
+                      <span className="text-gray-400">⬜</span>
+                    )}
+                    <span>Al menos un caracter especial (ej: !@#$%^&*)</span>
+                  </li>
+                </ul>
               </div>
               {/* Medidor de fortaleza de contraseña */}
               {password && (
