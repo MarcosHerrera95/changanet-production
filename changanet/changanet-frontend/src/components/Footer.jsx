@@ -64,15 +64,15 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 text-white relative overflow-hidden">
+    <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 text-white relative overflow-hidden w-full">
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-10 left-10 w-20 h-20 bg-emerald-400 rounded-full"></div>
         <div className="absolute top-32 right-20 w-16 h-16 bg-turquoise-400 rounded-full"></div>
         <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-amber-400 rounded-full"></div>
       </div>
 
-      <div className="relative container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+      <div className="relative w-full max-w-full px-4 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12 w-full">
           <div className="lg:col-span-2">
             <div className="flex items-center mb-4">
               <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center mr-3">
@@ -140,7 +140,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-2xl p-8 mb-8">
+        <div className="bg-gray-800 rounded-2xl p-8 mb-8 w-full">
           <div className="text-center">
             <h3 className="text-2xl font-bold mb-4 text-emerald-400">Mantente Conectado</h3>
             <p className="text-gray-300 mb-6 max-w-md mx-auto">
@@ -169,8 +169,8 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-gray-700 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
+        <div className="border-t border-gray-700 pt-8 w-full">
+          <div className="flex flex-col md:flex-row justify-between items-center w-full flex-wrap overflow-x-auto">
             <div className="text-gray-400 text-sm mb-4 md:mb-0">
               &copy; {new Date().getFullYear()} Changánet. Todos los derechos reservados.
             </div>
