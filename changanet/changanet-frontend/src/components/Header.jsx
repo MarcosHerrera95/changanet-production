@@ -34,8 +34,8 @@ const Header = () => {
 
   return (
     <>
-      <header className="bg-white/80 backdrop-blur-md border-b border-emerald-200/50 shadow-lg sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+      <header className="bg-white/80 backdrop-blur-md border-b border-emerald-200/50 shadow-lg sticky top-0 z-40 w-full">
+        <div className="w-full max-w-full px-4 py-4 flex flex-wrap justify-between items-center overflow-x-auto">
           <button
             onClick={() => smartNavigate('/')}
             className="text-2xl font-bold text-gradient transition-all duration-300 flex items-center space-x-3 group"
