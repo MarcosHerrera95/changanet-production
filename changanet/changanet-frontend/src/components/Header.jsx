@@ -55,71 +55,6 @@ const Header = () => {
 
 
           <div className="flex items-center space-x-3">
-            {/* Menú de accesibilidad */}
-            <div className="relative">
-              <button
-                onClick={() => setShowAccessibilityMenu(!showAccessibilityMenu)}
-                type="button"
-                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Opciones de accesibilidad"
-                aria-expanded={showAccessibilityMenu}
-                aria-haspopup="true"
-              >
-                <AdjustmentsHorizontalIcon className="w-5 h-5" />
-              </button>
-
-              {showAccessibilityMenu && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-gray-200">
-                    <h3 className="text-sm font-medium text-gray-900">Accesibilidad</h3>
-                    <p className="text-xs text-gray-600">Tamaño de fuente: {fontSize}px</p>
-                  </div>
-
-                  <div className="px-4 py-3 space-y-3">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-2">
-                        Tamaño de fuente
-                      </label>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => {
-                            decreaseFontSize();
-                            announceToScreenReader('Tamaño de fuente reducido');
-                          }}
-                          type="button"
-                          className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-                          aria-label="Reducir tamaño de fuente"
-                        >
-                          A-
-                        </button>
-                        <button
-                          onClick={() => {
-                            resetFontSize();
-                            announceToScreenReader('Tamaño de fuente restablecido');
-                          }}
-                          type="button"
-                          className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-                          aria-label="Restablecer tamaño de fuente"
-                        >
-                          A
-                        </button>
-                        <button
-                          onClick={() => {
-                            increaseFontSize();
-                            announceToScreenReader('Tamaño de fuente aumentado');
-                          }}
-                          type="button"
-                          className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-                          aria-label="Aumentar tamaño de fuente"
-                        >
-                          A+
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
 
             {user ? (
               <>
@@ -170,26 +105,11 @@ const Header = () => {
               </>
             )}
 
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              type="button"
-              className="md:hidden text-cyan-600 hover:text-cyan-700 p-3 rounded-lg hover:bg-cyan-50/50 transition-all duration-300 min-h-[44px] touch-manipulation"
-              aria-label="Alternar menú de navegación">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-              </svg>
-            </button>
+            {/* Botones eliminados: hamburguesa y accesibilidad */}
           </div>
         </div>
 
-        {/* Mobile menu */}
-        {isMenuOpen && (
-          <div className="md:hidden bg-white/95 backdrop-blur-md border-t border-emerald-100/50 shadow-xl animate-slide-up">
-            <nav className="container mx-auto px-4 py-6 space-y-4">
-            </nav>
-          </div>
-        )}
+        {/* Menú móvil eliminado */}
       </header>
 
       {/* Modales */}
