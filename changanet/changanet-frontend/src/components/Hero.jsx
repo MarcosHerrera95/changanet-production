@@ -4,7 +4,7 @@ import { useModal } from '../context/ModalContext';
 const Hero = () => {
   const { setShowSignup } = useModal();
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 text-white min-h-screen flex items-center">
+    <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 text-white min-h-screen flex items-center w-full">
       {/* Animated background elements */}
       <div className="absolute inset-0">
         <div className="absolute top-20 left-20 w-32 h-32 bg-white/10 rounded-full blur-xl animate-float"></div>
@@ -19,7 +19,7 @@ const Hero = () => {
         backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
       }}></div>
 
-      <div className="relative container mx-auto px-4 py-20 md:py-32 text-center z-10">
+      <div className="relative w-full px-4 py-20 md:py-32 text-center z-10">
         {/* Hero icon */}
         <div className="mb-10 flex justify-center animate-fade-in">
           <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center shadow-2xl animate-glow border border-white/30">

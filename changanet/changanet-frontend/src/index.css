@@ -10,8 +10,10 @@
 @tailwind utilities;
 
 @layer base {
-  html {
+  html, body, #root {
     font-family: 'Inter', sans-serif;
+    width: 100%;
+    overflow-x: hidden;
   }
 }
 
