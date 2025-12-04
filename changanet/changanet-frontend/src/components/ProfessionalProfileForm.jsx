@@ -136,6 +136,7 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
     try {
       // Preparar datos para envío
       const submitData = {
+        especialidad: Array.isArray(formData.especialidades) && formData.especialidades.length > 0 ? formData.especialidades[0] : '',
         especialidades: formData.especialidades,
         anos_experiencia: parseInt(formData.anos_experiencia),
         zona_cobertura: formData.zona_cobertura.trim(),
