@@ -158,7 +158,10 @@ if (process.env.NODE_ENV !== 'test') {
 }
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://127.0.0.1:5176", "http://localhost:5177", "http://127.0.0.1:5177", "http://localhost:5178", "http://127.0.0.1:5178"],
+    origin: [
+      "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://127.0.0.1:5176", "http://localhost:5177", "http://127.0.0.1:5177", "http://localhost:5178", "http://127.0.0.1:5178",
+      "https://changanet-production-xgkf.onrender.com" // Dominio frontend producción
+    ],
     methods: ["GET", "POST"],
     credentials: true
   },

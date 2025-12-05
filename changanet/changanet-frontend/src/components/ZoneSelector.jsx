@@ -81,9 +81,12 @@ const ZoneSelector = ({ zona_cobertura, latitud, longitud, onChange, error }) =>
     setLocationError('');
 
     try {
-      // Usar el proxy backend para evitar CORS
+      // Usar la URL completa del backend en producción
       const token = localStorage.getItem('changanet_token');
-      const response = await fetch(`/api/geocode?zone=${encodeURIComponent(zone + ', Argentina')}`, {
+      const apiUrl = process.env.NODE_ENV === 'production'
+        ? `https://changanet-production-backend.onrender.com/api/geocode?zone=${encodeURIComponent(zone + ', Argentina')}`
+        : `/api/geocode?zone=${encodeURIComponent(zone + ', Argentina')}`;
+      const response = await fetch(apiUrl, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
