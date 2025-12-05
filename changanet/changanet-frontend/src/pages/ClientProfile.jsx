@@ -95,7 +95,7 @@ const ClientProfile = () => {
   const handleSubmit = async (e) => {
     try {
       let response;
-      let data = null;
+      let data;
 
       if (selectedFile) {
         // If there's a file to upload, use FormData
@@ -135,10 +135,11 @@ const ClientProfile = () => {
         });
       }
 
-      // Manejo robusto de respuesta no JSON
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         data = await response.json();
+      } else {
+        data = null;
       }
 
       if (response.ok && data) {
