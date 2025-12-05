@@ -19,7 +19,10 @@ export const useProfile = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/profile', {
+      const apiUrl = process.env.NODE_ENV === 'production'
+        ? 'https://changanet-production-backend.onrender.com/api/profile'
+        : '/api/profile';
+      const response = await fetch(apiUrl, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('changanet_token')}`
         }
@@ -63,7 +66,10 @@ export const useProfile = () => {
         }
       });
 
-      const response = await fetch('/api/profile', {
+      const apiUrl = process.env.NODE_ENV === 'production'
+        ? 'https://changanet-production-backend.onrender.com/api/profile'
+        : '/api/profile';
+      const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('changanet_token')}`
