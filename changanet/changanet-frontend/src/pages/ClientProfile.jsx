@@ -93,11 +93,6 @@ const ClientProfile = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    setSaving(true);
-
     try {
       let response;
 
@@ -139,14 +134,24 @@ const ClientProfile = () => {
         });
       }
 
-      let data = null;
-      try {
-        data = await response.json();
-      } catch (jsonErr) {
-        // Si no es JSON, mostrar el status
-        setError('Error inesperado del servidor.');
-        console.error('Respuesta no JSON:', response);
-        return;
+      // Manejo robusto de respuesta no JSON
+      const contentType = response.headers.get('content-type');
+      if (response.ok && contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        setSuccess('Perfil actualizado exitosamente.');
+        setSelectedFile(null);
+      } else if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        setError(data.error || 'Error al actualizar el perfil.');
+      } else {
+        // Si la respuesta no es JSON, mostrar error claro
+        setError('Error inesperado del servidor. La respuesta no es JSON. Verifica la conexión con el backend.');
+      }
+    } catch (err) {
+      setError('Error de conexión. Inténtalo de nuevo.');
+    } finally {
+      setSaving(false);
+    }
       }
 
       if (response.ok) {
