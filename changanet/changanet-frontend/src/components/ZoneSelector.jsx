@@ -91,7 +91,19 @@ const ZoneSelector = ({ zona_cobertura, latitud, longitud, onChange, error }) =>
         throw new Error('Error en la geocodificación');
       }
 
-      const data = await response.json();
+      // Validar que la respuesta sea JSON
+      const contentType = response.headers.get('content-type');
+      const text = await response.text();
+      if (!contentType || !contentType.includes('application/json') || text.trim().startsWith('<!doctype')) {
+        setLocationError('Error: El servidor respondió con un formato inesperado. Verifica la configuración del backend y CORS.');
+        setCoordinates({ lat: null, lng: null });
+        notifyChange(zone, null, null);
+        console.error('Respuesta inesperada:', text);
+        return;
+      }
+
+      // Si es JSON, parsear
+      const data = JSON.parse(text);
 
       if (data && data.length > 0) {
         const { lat, lon } = data[0];
