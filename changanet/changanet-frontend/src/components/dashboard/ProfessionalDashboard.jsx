@@ -17,7 +17,12 @@ const ProfessionalDashboard = ({ user }) => {
     completedServices: 0,
     pendingQuotes: 0,
     unreadNotifications: 0,
-    averageRating: 0
+    averageRating: 0,
+    especialidad: '',
+    especialidades: [],
+    zona_cobertura: '',
+    latitud: '',
+    longitud: ''
   });
   const [recentQuotes, setRecentQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,9 +82,25 @@ const ProfessionalDashboard = ({ user }) => {
 
       if (profileRes.ok) {
         const profile = await profileRes.json();
+        // Soporta formato plano y formato anidado (perfil)
+        const p = profile.perfil || profile;
         setStats(prev => ({
           ...prev,
-          averageRating: profile.calificacion_promedio || 0
+          averageRating: profile.calificacion_promedio || p.calificacion_promedio || 0,
+          especialidad: p.especialidad || '',
+          especialidades: (() => {
+            if (Array.isArray(p.especialidades)) return p.especialidades;
+            if (typeof p.especialidades === 'string' && p.especialidades.length > 0) {
+              try {
+                const parsed = JSON.parse(p.especialidades);
+                return Array.isArray(parsed) ? parsed : [];
+              } catch { return []; }
+            }
+            return [];
+          })(),
+          zona_cobertura: p.zona_cobertura || '',
+          latitud: p.latitud || '',
+          longitud: p.longitud || ''
         }));
       }
     } catch (error) {
@@ -132,6 +153,31 @@ const ProfessionalDashboard = ({ user }) => {
         <p className="text-gray-600">
           Bienvenido a tu panel profesional. Gestiona tus servicios y cotizaciones.
         </p>
+      </div>
+
+      {/* Información profesional visual */}
+      <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+        <h2 className="text-xl font-bold text-gray-800 mb-2">Información Profesional</h2>
+        <div className="mb-2">
+          <span className="font-semibold text-gray-700">Especialidad principal:</span>
+          <span className="ml-2 text-blue-700">{stats.especialidad || '-'}</span>
+        </div>
+        {stats.especialidades.length > 0 && (
+          <div className="mb-2">
+            <span className="font-semibold text-gray-700">Especialidades:</span>
+            <span className="ml-2 text-blue-700">{stats.especialidades.join(', ')}</span>
+          </div>
+        )}
+        <div className="mb-2">
+          <span className="font-semibold text-gray-700">Zona de cobertura:</span>
+          <span className="ml-2 text-blue-700">{stats.zona_cobertura || '-'}</span>
+        </div>
+        {(stats.latitud && stats.longitud) && (
+          <div className="mb-2">
+            <span className="font-semibold text-gray-700">Coordenadas GPS:</span>
+            <span className="ml-2 text-blue-700">{stats.latitud}, {stats.longitud}</span>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}

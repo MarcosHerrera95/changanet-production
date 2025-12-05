@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LoginModal from './modals/LoginModal';
@@ -7,25 +6,17 @@ import { useModal } from '../context/ModalContext';
 import NotificationBell from './NotificationBell';
 import ProfilePicture from './ProfilePicture';
 import useSmartNavigation from '../hooks/useSmartNavigation';
-import { useAccessibility } from '../hooks/useAccessibility';
 import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 
 const Header = () => {
   const smartNavigate = useSmartNavigation();
   const { user, logout } = useAuth();
   const { showSignup, setShowSignup, showLogin, setShowLogin } = useModal();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showAccessibilityMenu, setShowAccessibilityMenu] = useState(false);
+  // Eliminados hooks de menú y accesibilidad
   const navigate = useNavigate();
 
   // Hook de accesibilidad
-  const {
-    fontSize,
-    increaseFontSize,
-    decreaseFontSize,
-    resetFontSize,
-    announceToScreenReader
-  } = useAccessibility();
+  // Eliminado hook de accesibilidad
 
   const handleLogout = () => {
     logout();
@@ -36,25 +27,25 @@ const Header = () => {
     <>
       <header className="bg-white/80 backdrop-blur-md border-b border-emerald-200/50 shadow-lg sticky top-0 z-40 w-full">
         <div className="w-full max-w-full px-4 py-4 flex flex-wrap justify-between items-center overflow-x-auto">
-          <button
-            onClick={() => smartNavigate('/')}
-            className="text-2xl font-bold text-gradient transition-all duration-300 flex items-center space-x-3 group"
-            aria-label="Ir a Inicio"
-            type="button"
-          >
-            <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center transition-all duration-300">
-              <svg className="w-6 h-6" fill="none" stroke="white" viewBox="0 0 32 32">
-                <path d="M12 16L14 18L16 16L18 18L20 16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M10 14L12 16" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M22 14L20 16" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M16 12L16 16" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <span className="text-gray-800 font-extrabold">Changánet</span>
-          </button>
+            <button
+              onClick={() => smartNavigate('/')}
+              className="flex items-center gap-2 group"
+              aria-label="Ir a Inicio"
+              type="button"
+            >
+              <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-md">
+                <svg className="w-7 h-7" fill="none" stroke="white" viewBox="0 0 32 32">
+                  <path d="M12 16L14 18L16 16L18 18L20 16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M10 14L12 16" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M22 14L20 16" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M16 12L16 16" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <span className="text-2xl font-extrabold text-gradient">Changánet</span>
+            </button>
 
 
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-row items-center gap-4 justify-end w-full">
 
             {user ? (
               <>
@@ -78,11 +69,11 @@ const Header = () => {
                   </svg>
                   <span>Mi Cuenta</span>
                 </button>
-                <button onClick={handleLogout} type="button" className="bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600 hover:shadow-md hover:scale-[1.02] transition-all duration-300 font-medium flex items-center space-x-2 min-h-[44px] touch-manipulation">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <button onClick={handleLogout} type="button" className="bg-red-500 text-white px-3 py-2 rounded-full hover:bg-red-700 shadow transition-all duration-200 font-semibold flex items-center gap-2 min-h-[40px]">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2h-3a2 2 0 01-2-2V7a2 2 0 012-2h3a2 2 0 012 2v1" />
                   </svg>
-                  <span>Cerrar Sesión</span>
+                  <span className="hidden sm:inline">Logout</span>
                 </button>
               </>
             ) : (

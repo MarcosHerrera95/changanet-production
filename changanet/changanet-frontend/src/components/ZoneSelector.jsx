@@ -81,10 +81,11 @@ const ZoneSelector = ({ zona_cobertura, latitud, longitud, onChange, error }) =>
     setLocationError('');
 
     try {
-      // Usar Nominatim (OpenStreetMap) para geocodificación gratuita
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(zone + ', Argentina')}&limit=1`
-      );
+      // Usar el proxy backend para evitar CORS
+      const token = localStorage.getItem('changanet_token');
+      const response = await fetch(`/api/geocode?zone=${encodeURIComponent(zone + ', Argentina')}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
 
       if (!response.ok) {
         throw new Error('Error en la geocodificación');
@@ -263,42 +264,71 @@ const ZoneSelector = ({ zona_cobertura, latitud, longitud, onChange, error }) =>
         ))}
       </div>
 
-      {/* Coordenadas GPS */}
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <h4 className="text-sm font-medium text-gray-700 mb-2">Coordenadas GPS</h4>
+
+      {/* Coordenadas GPS - Mejor UX */}
+      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <span>Coordenadas GPS</span>
+            <span className="text-gray-400" title="Las coordenadas GPS ayudan a los clientes a encontrarte y validar tu zona de cobertura.">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3"/></svg>
+            </span>
+          </h4>
+          <button
+            type="button"
+            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors border border-blue-200"
+            onClick={() => zoneInput && geocodeZone(zoneInput)}
+            disabled={!zoneInput || loadingLocation}
+            title="Obtener coordenadas automáticamente según la zona"
+          >
+            Obtener coordenadas de zona
+          </button>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs text-gray-600 mb-1">Latitud</label>
             <input
-              type="number"
-              value={coordinates.lat || ''}
+              type="text"
+              inputMode="decimal"
+              pattern="^-?\d{1,2}(\.\d{1,8})?$"
+              value={coordinates.lat ?? ''}
               onChange={(e) => handleManualCoordinates(e.target.value, coordinates.lng)}
-              step="0.000001"
-              min="-90"
-              max="90"
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="-34.6037"
+              className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${locationError ? 'border-red-400' : 'border-gray-300'}`}
+              placeholder="Ej: -34.6037"
+              aria-label="Latitud GPS"
             />
           </div>
           <div>
             <label className="block text-xs text-gray-600 mb-1">Longitud</label>
             <input
-              type="number"
-              value={coordinates.lng || ''}
+              type="text"
+              inputMode="decimal"
+              pattern="^-?\d{1,3}(\.\d{1,8})?$"
+              value={coordinates.lng ?? ''}
               onChange={(e) => handleManualCoordinates(coordinates.lat, e.target.value)}
-              step="0.000001"
-              min="-180"
-              max="180"
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="-58.3816"
+              className={`w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${locationError ? 'border-red-400' : 'border-gray-300'}`}
+              placeholder="Ej: -58.3816"
+              aria-label="Longitud GPS"
             />
           </div>
         </div>
-        {coordinates.lat && coordinates.lng && (
-          <p className="text-xs text-green-600 mt-2">
-            ✓ Coordenadas válidas obtenidas
-          </p>
-        )}
+        <div className="mt-2">
+          {locationError && (
+            <p className="text-xs text-red-600 flex items-center gap-1">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3"/></svg>
+              {locationError}
+            </p>
+          )}
+          {coordinates.lat && coordinates.lng && !locationError && (
+            <p className="text-xs text-green-600 flex items-center gap-1">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3"/></svg>
+              ✓ Coordenadas válidas
+            </p>
+          )}
+          {!coordinates.lat && !coordinates.lng && !locationError && (
+            <p className="text-xs text-gray-500">Especifica la zona donde ofreces tus servicios. Las coordenadas GPS ayudan a los clientes a encontrarte.</p>
+          )}
+        </div>
       </div>
 
       {/* Mensajes de error */}

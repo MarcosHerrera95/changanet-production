@@ -35,22 +35,26 @@ const SpecialtySelector = ({ value = [], onChange, error, maxSelections = 5 }) =
 
   // Actualizar estado local cuando cambie el valor externo
   useEffect(() => {
-    setSelectedSpecialties(value);
+    // Solo actualizar si value es diferente al estado local
+    if (Array.isArray(value) && JSON.stringify(value) !== JSON.stringify(selectedSpecialties)) {
+      setSelectedSpecialties(value);
+    }
   }, [value]);
 
-  // Notificar cambios al componente padre
-  useEffect(() => {
-    onChange(selectedSpecialties);
-  }, [selectedSpecialties, onChange]);
+
 
   const handleToggleSpecialty = (specialty) => {
     if (selectedSpecialties.includes(specialty)) {
       // Remover especialidad
-      setSelectedSpecialties(prev => prev.filter(s => s !== specialty));
+      const updated = selectedSpecialties.filter(s => s !== specialty);
+      setSelectedSpecialties(updated);
+      onChange(updated);
     } else {
       // Agregar especialidad (con límite)
       if (selectedSpecialties.length < maxSelections) {
-        setSelectedSpecialties(prev => [...prev, specialty]);
+        const updated = [...selectedSpecialties, specialty];
+        setSelectedSpecialties(updated);
+        onChange(updated);
       }
     }
   };
@@ -58,7 +62,9 @@ const SpecialtySelector = ({ value = [], onChange, error, maxSelections = 5 }) =
   const handleAddCustomSpecialty = () => {
     if (customSpecialty.trim() && !selectedSpecialties.includes(customSpecialty.trim())) {
       if (selectedSpecialties.length < maxSelections) {
-        setSelectedSpecialties(prev => [...prev, customSpecialty.trim()]);
+        const updated = [...selectedSpecialties, customSpecialty.trim()];
+        setSelectedSpecialties(updated);
+        onChange(updated);
         setCustomSpecialty('');
         setShowCustomInput(false);
       }
@@ -66,7 +72,9 @@ const SpecialtySelector = ({ value = [], onChange, error, maxSelections = 5 }) =
   };
 
   const handleRemoveSpecialty = (specialty) => {
-    setSelectedSpecialties(prev => prev.filter(s => s !== specialty));
+    const updated = selectedSpecialties.filter(s => s !== specialty);
+    setSelectedSpecialties(updated);
+    onChange(updated);
   };
 
   const isSelected = (specialty) => selectedSpecialties.includes(specialty);

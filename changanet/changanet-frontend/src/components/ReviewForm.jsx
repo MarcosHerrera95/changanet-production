@@ -140,7 +140,7 @@ const ReviewForm = ({ servicio_id, onReviewSubmitted }) => {
     <div className="space-y-6">
       {/* Mensaje de éxito */}
       {submitSuccess && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-4 rounded-2xl flex items-center">
+        <div className="bg-[var(--success-bg)] border border-[var(--success-border)] text-[var(--success)] p-4 rounded-2xl flex items-center" role="status" aria-live="polite">
           <span className="text-2xl mr-3">✅</span>
           <div>
             <p className="font-medium">¡Reseña enviada exitosamente!</p>
@@ -149,10 +149,10 @@ const ReviewForm = ({ servicio_id, onReviewSubmitted }) => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6" aria-label="Formulario de reseña" role="form">
         {/* Error general */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl flex items-center">
+          <div className="bg-[var(--error-bg)] border border-[var(--error-border)] text-[var(--error)] p-4 rounded-2xl flex items-center" role="alert" aria-live="assertive">
             <span className="text-xl mr-3">⚠️</span>
             <span>{error}</span>
           </div>
@@ -174,16 +174,17 @@ const ReviewForm = ({ servicio_id, onReviewSubmitted }) => {
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            className={`w-full px-4 py-3 border-2 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-gray-700 placeholder-gray-400 resize-none ${
-              validationErrors.comment ? 'border-red-300 bg-red-50' : 'border-gray-200'
+            className={`w-full px-4 py-3 border-2 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-transparent transition-all duration-200 text-gray-700 placeholder-gray-400 resize-none ${
+              validationErrors.comment ? 'border-[var(--error)] bg-[var(--error-bg)]' : 'border-gray-200'
             }`}
             rows={4}
             placeholder="Comparte tu experiencia con este servicio..."
             maxLength={1000}
+            aria-label="Comentario de la reseña"
           />
           <div className="flex justify-between items-center mt-1">
             {validationErrors.comment && (
-              <p className="text-sm text-red-600">{validationErrors.comment}</p>
+              <p className="text-sm text-[var(--error)]" role="alert">{validationErrors.comment}</p>
             )}
             <p className="text-sm text-gray-500 ml-auto">
               {comment.length}/1000 caracteres
@@ -208,7 +209,8 @@ const ReviewForm = ({ servicio_id, onReviewSubmitted }) => {
         <button
           type="submit"
           disabled={loading || rating === 0}
-          className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-4 rounded-2xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+          className="w-full bg-[var(--primary)] text-white py-4 rounded-2xl hover:bg-[var(--primary-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+          aria-label="Enviar reseña"
         >
           {loading ? (
             <>

@@ -385,7 +385,7 @@ const MisCotizacionesProfesional = ({ onClose }) => {
                     <div className="detail-group">
                       <p><strong>Mi Respuesta:</strong></p>
                       <div className="my-response">
-                        <p>💰 <strong>Precio:</strong> ${cotizacionSeleccionada.mi_respuesta.precio.toLocaleString()}</p>
+                        <p>💰 <strong>Precio:</strong> ${cotizacionSeleccionada.mi_respuesta.precio != null ? cotizacionSeleccionada.mi_respuesta.precio.toLocaleString() : '-'}</p>
                         <p>⏰ <strong>Tiempo estimado:</strong> {cotizacionSeleccionada.mi_respuesta.tiempo} horas</p>
                         <p>💬 <strong>Comentarios:</strong> {cotizacionSeleccionada.mi_respuesta.comentarios}</p>
                         <p><small>Respondido el: {cotizacionSeleccionada.mi_respuesta.fecha_respuesta}</small></p>

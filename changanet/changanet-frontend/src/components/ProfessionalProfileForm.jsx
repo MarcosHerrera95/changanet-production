@@ -12,18 +12,11 @@ import { useProfile } from '../hooks/useProfile';
 const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
   const { updateProfile } = useProfile();
   const [formData, setFormData] = useState({
-    // REQ-07: Especialidades múltiples
-    especialidades: initialData.especialidades || [],
-
-    // REQ-08: Años de experiencia
+    especialidades: Array.isArray(initialData.especialidades) ? initialData.especialidades : [],
     anos_experiencia: initialData.anos_experiencia || '',
-
-    // REQ-09: Zona de cobertura con coordenadas GPS
     zona_cobertura: initialData.zona_cobertura || '',
     latitud: initialData.latitud || null,
     longitud: initialData.longitud || null,
-
-    // REQ-10: Sistema flexible de tarifas
     tipo_tarifa: initialData.tipo_tarifa || 'hora',
     tarifa_hora: initialData.tarifa_hora || '',
     tarifa_servicio: initialData.tarifa_servicio || '',
@@ -36,6 +29,10 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
     url_foto_perfil: initialData.url_foto_perfil || '',
     url_foto_portada: initialData.url_foto_portada || '',
 
+    // Archivos de fotos para subir
+    file_foto_perfil: null,
+    file_foto_portada: null,
+
     // Disponibilidad
     esta_disponible: initialData.esta_disponible ?? true
   });
@@ -46,21 +43,32 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
   // Actualizar formData cuando cambien los datos iniciales
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
-      setFormData({
-        especialidades: initialData.especialidades || [],
-        anos_experiencia: initialData.anos_experiencia || '',
-        zona_cobertura: initialData.zona_cobertura || '',
-        latitud: initialData.latitud || null,
-        longitud: initialData.longitud || null,
-        tipo_tarifa: initialData.tipo_tarifa || 'hora',
-        tarifa_hora: initialData.tarifa_hora || '',
-        tarifa_servicio: initialData.tarifa_servicio || '',
-        tarifa_convenio: initialData.tarifa_convenio || '',
-        descripcion: initialData.descripcion || '',
-        url_foto_perfil: initialData.url_foto_perfil || '',
-        url_foto_portada: initialData.url_foto_portada || '',
-        esta_disponible: initialData.esta_disponible ?? true
+      // Solo actualizar si initialData es diferente al estado actual
+      const isDifferent = JSON.stringify({
+        ...formData,
+        especialidades: Array.isArray(formData.especialidades) ? formData.especialidades : [],
+      }) !== JSON.stringify({
+        ...initialData,
+        especialidades: Array.isArray(initialData.especialidades) ? initialData.especialidades : [],
       });
+      if (isDifferent) {
+        setFormData(prev => ({
+          ...prev,
+          especialidades: Array.isArray(initialData.especialidades) ? initialData.especialidades : [],
+          anos_experiencia: initialData.anos_experiencia || '',
+          zona_cobertura: initialData.zona_cobertura || '',
+          latitud: initialData.latitud || null,
+          longitud: initialData.longitud || null,
+          tipo_tarifa: initialData.tipo_tarifa || 'hora',
+          tarifa_hora: initialData.tarifa_hora || '',
+          tarifa_servicio: initialData.tarifa_servicio || '',
+          tarifa_convenio: initialData.tarifa_convenio || '',
+          descripcion: initialData.descripcion || '',
+          url_foto_perfil: initialData.url_foto_perfil || '',
+          url_foto_portada: initialData.url_foto_portada || '',
+          esta_disponible: initialData.esta_disponible ?? true
+        }));
+      }
     }
   }, [initialData]);
 
@@ -108,13 +116,13 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
   // Manejar cambios en campos simples
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Limpiar error del campo si existe
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: null }));
     }
   };
 
   // Manejar envío del formulario
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -128,6 +136,7 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
     try {
       // Preparar datos para envío
       const submitData = {
+        especialidad: Array.isArray(formData.especialidades) && formData.especialidades.length > 0 ? formData.especialidades[0] : '',
         especialidades: formData.especialidades,
         anos_experiencia: parseInt(formData.anos_experiencia),
         zona_cobertura: formData.zona_cobertura.trim(),
@@ -138,15 +147,35 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
         tarifa_servicio: formData.tipo_tarifa === 'servicio' ? parseFloat(formData.tarifa_servicio) : null,
         tarifa_convenio: formData.tipo_tarifa === 'convenio' ? formData.tarifa_convenio.trim() : null,
         descripcion: formData.descripcion.trim(),
-        url_foto_perfil: formData.url_foto_perfil,
-        url_foto_portada: formData.url_foto_portada,
         esta_disponible: formData.esta_disponible
       };
 
+      // Adjuntar archivos reales si existen
+      if (formData.file_foto_perfil instanceof File) {
+        submitData.foto = formData.file_foto_perfil;
+        submitData.foto_tipo = 'perfil';
+      }
+      if (formData.file_foto_portada instanceof File) {
+        submitData.foto = formData.file_foto_portada;
+        submitData.foto_tipo = 'portada';
+      }
+
       // Llamar a la API para actualizar el perfil
-      await updateProfile(submitData);
+      const result = await updateProfile(submitData);
+
+      // Refrescar la foto de perfil si fue actualizada
+      if (result && result.profile) {
+        setFormData(prev => ({
+          ...prev,
+          url_foto_perfil: result.profile.url_foto_perfil || prev.url_foto_perfil,
+          url_foto_portada: result.profile.url_foto_portada || prev.url_foto_portada,
+        }));
+      }
 
       onSuccess('Perfil profesional actualizado exitosamente');
+
+      // Hacer rollback visual (scroll hacia arriba)
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error('Error updating profile:', error);
       onError(error.message || 'Error al actualizar el perfil');
@@ -156,15 +185,21 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8" aria-label="Formulario de perfil profesional" role="form">
       {/* REQ-06: Subida de fotos */}
       <div className="bg-gray-50 p-6 rounded-lg">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Fotos del Perfil</h3>
         <ImageUploader
           profilePhoto={formData.url_foto_perfil}
           coverPhoto={formData.url_foto_portada}
-          onProfilePhotoChange={(url) => handleChange('url_foto_perfil', url)}
-          onCoverPhotoChange={(url) => handleChange('url_foto_portada', url)}
+          onProfilePhotoChange={(file, url) => {
+            handleChange('file_foto_perfil', file);
+            handleChange('url_foto_perfil', url);
+          }}
+          onCoverPhotoChange={(file, url) => {
+            handleChange('file_foto_portada', file);
+            handleChange('url_foto_portada', url);
+          }}
         />
       </div>
 
@@ -186,15 +221,16 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
           type="number"
           value={formData.anos_experiencia}
           onChange={(e) => handleChange('anos_experiencia', e.target.value)}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.anos_experiencia ? 'border-red-500' : 'border-gray-300'
+          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+            errors.anos_experiencia ? 'border-[var(--error)]' : 'border-gray-300'
           }`}
           min="0"
           max="50"
           required
+          aria-label="Años de experiencia"
         />
         {errors.anos_experiencia && (
-          <p className="mt-1 text-sm text-red-600">{errors.anos_experiencia}</p>
+          <p className="mt-1 text-sm text-[var(--error)]" role="alert">{errors.anos_experiencia}</p>
         )}
       </div>
 
@@ -230,14 +266,15 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
           value={formData.descripcion}
           onChange={(e) => handleChange('descripcion', e.target.value)}
           rows={4}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.descripcion ? 'border-red-500' : 'border-gray-300'
+          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+            errors.descripcion ? 'border-[var(--error)]' : 'border-gray-300'
           }`}
           placeholder="Describe tus servicios, experiencia y especialidades..."
           required
+          aria-label="Descripción de servicios"
         />
         {errors.descripcion && (
-          <p className="mt-1 text-sm text-red-600">{errors.descripcion}</p>
+          <p className="mt-1 text-sm text-[var(--error)]" role="alert">{errors.descripcion}</p>
         )}
       </div>
 
@@ -248,7 +285,8 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
             type="checkbox"
             checked={formData.esta_disponible}
             onChange={(e) => handleChange('esta_disponible', e.target.checked)}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="rounded border-gray-300 text-[var(--primary)] focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+            aria-label="Disponible para nuevos trabajos"
           />
           <span className="text-sm font-medium text-gray-700">
             Estoy disponible para nuevos trabajos
@@ -261,7 +299,8 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
         <button
           type="submit"
           disabled={loading}
-          className="bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          className="bg-[var(--primary)] text-white px-8 py-3 rounded-md hover:bg-[var(--primary-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          aria-label="Guardar perfil profesional"
         >
           {loading && (
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>

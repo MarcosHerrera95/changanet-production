@@ -74,20 +74,22 @@ const SubscribeForm = () => {
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3" aria-label="Formulario de suscripción" role="form">
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Tu correo electrónico"
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 placeholder-gray-500"
+            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-[var(--primary)] text-gray-900 placeholder-gray-500"
             disabled={loading}
             required
+            aria-label="Correo electrónico para suscripción"
           />
           <button
             type="submit"
             disabled={loading || !email.trim()}
-            className="px-6 py-3 bg-[#2ECC71] text-white font-medium rounded-lg hover:bg-[#27AE60] focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            className="px-6 py-3 bg-[var(--primary)] text-white font-medium rounded-lg hover:bg-[var(--primary-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            aria-label="Suscribirse al newsletter"
           >
             {loading ? 'Suscribiendo...' : 'Suscribirse'}
           </button>
@@ -95,7 +97,7 @@ const SubscribeForm = () => {
       )}
 
       {error && (
-        <div className="mt-3 text-center text-red-600 text-sm">
+        <div className="mt-3 text-center text-[var(--error)] text-sm" role="alert" aria-live="assertive">
           {error}
         </div>
       )}

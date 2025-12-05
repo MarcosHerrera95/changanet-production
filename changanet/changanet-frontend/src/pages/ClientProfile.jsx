@@ -139,9 +139,17 @@ const ClientProfile = () => {
         });
       }
 
-      if (response.ok) {
-        const data = await response.json();
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        // Si no es JSON, mostrar el status
+        setError('Error inesperado del servidor.');
+        console.error('Respuesta no JSON:', response);
+        return;
+      }
 
+      if (response.ok) {
         // Update AuthContext with new user data to reflect changes immediately
         if (data.usuario) {
           const updatedUser = {
@@ -170,12 +178,13 @@ const ClientProfile = () => {
         // Clear success message after 3 seconds
         setTimeout(() => setSuccess(''), 3000);
       } else {
-        const data = await response.json();
-        setError(data.error || 'Error al actualizar el perfil.');
+        // Mostrar el error real del backend si existe
+        setError(data.error || data.message || `Error al actualizar el perfil. Código: ${response.status}`);
+        console.error('Error backend:', data);
       }
     } catch (err) {
       console.error('Error updating profile:', err);
-      setError('Error de conexión. Inténtalo de nuevo.');
+      setError(err.message || 'Error de conexión. Inténtalo de nuevo.');
     } finally {
       setSaving(false);
     }

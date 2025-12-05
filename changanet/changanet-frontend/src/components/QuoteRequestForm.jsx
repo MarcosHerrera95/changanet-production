@@ -192,12 +192,12 @@ const QuoteRequestForm = ({ onClose, professionalName, professionalId }) => {
 
       {/* Error Alert - Compact */}
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded-r-lg" role="alert" aria-live="polite">
+        <div className="bg-[var(--error-bg)] border-l-4 border-[var(--error)] p-3 rounded-r-lg" role="alert" aria-live="assertive">
           <div className="flex items-center">
-            <svg className="w-4 h-4 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4 text-[var(--error)] mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
-            <p className="text-red-700 text-sm font-medium">{error}</p>
+            <p className="text-[var(--error)] text-sm font-medium">{error}</p>
           </div>
         </div>
       )}
@@ -281,11 +281,12 @@ const QuoteRequestForm = ({ onClose, professionalName, professionalId }) => {
               name="descripción"
               value={formData.descripción}
               onChange={handleChange}
-              className="w-full px-3 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-gray-900 text-sm min-h-[100px] placeholder-gray-500 resize-none"
+              className="w-full px-3 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-transparent transition-all duration-300 text-gray-900 text-sm min-h-[100px] placeholder-gray-500 resize-none"
               rows="4"
               placeholder="Describe el trabajo que necesitas..."
               required
               aria-describedby="descripcion-help"
+              aria-label="Descripción del trabajo"
             />
             <div id="descripcion-help" className="sr-only">Describe el trabajo que necesitas, incluyendo detalles importantes como tamaño, materiales, urgencia, etc.</div>
           </div>
@@ -304,10 +305,11 @@ const QuoteRequestForm = ({ onClose, professionalName, professionalId }) => {
               name="zona_cobertura"
               value={formData.zona_cobertura}
               onChange={handleChange}
-              className="w-full px-3 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 text-gray-900 text-sm placeholder-gray-500"
+              className="w-full px-3 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-transparent transition-all duration-300 text-gray-900 text-sm placeholder-gray-500"
               placeholder="Ej: Palermo, CABA"
               required
               aria-describedby="zona-help"
+              aria-label="Zona de cobertura"
             />
             <div id="zona-help" className="sr-only">Ingresa la ubicación donde necesitas el servicio, incluyendo calle y barrio si es posible</div>
           </div>
@@ -321,7 +323,8 @@ const QuoteRequestForm = ({ onClose, professionalName, professionalId }) => {
                 type="checkbox"
                 checked={formData.es_urgente}
                 onChange={(e) => setFormData({ ...formData, es_urgente: e.target.checked })}
-                className="h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                className="h-5 w-5 text-red-600 border-gray-300 rounded focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                aria-label="Servicio urgente"
               />
               <label htmlFor="es_urgente" className="ml-2 flex items-center text-gray-900 font-semibold text-base">
                 <svg className="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -334,8 +337,8 @@ const QuoteRequestForm = ({ onClose, professionalName, professionalId }) => {
               Marca esta casilla si necesitas atención inmediata. Los servicios urgentes reciben prioridad de atención.
             </p>
             {formData.es_urgente && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-700 font-medium flex items-center">
+              <div className="p-3 bg-[var(--error-bg)] border border-[var(--error-border)] rounded-lg" role="note">
+                <p className="text-sm text-[var(--error)] font-medium flex items-center">
                   <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
@@ -368,7 +371,7 @@ const QuoteRequestForm = ({ onClose, professionalName, professionalId }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 min-h-[48px] touch-manipulation text-sm"
+            className="w-full bg-[var(--primary)] text-white py-3 px-6 rounded-xl hover:bg-[var(--primary-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:ring-offset-2 font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 min-h-[48px] touch-manipulation text-sm"
             aria-label="Enviar solicitud completa de presupuesto"
           >
             {loading ? (
@@ -392,7 +395,8 @@ const QuoteRequestForm = ({ onClose, professionalName, professionalId }) => {
       <div className="flex justify-center pt-2">
         <button
           onClick={onClose}
-          className="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 font-medium text-sm"
+          className="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 font-medium text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+          aria-label="Volver"
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />

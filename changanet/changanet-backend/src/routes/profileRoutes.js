@@ -75,14 +75,16 @@ router.get('/', authenticateToken, async (req, res) => {
       if (!profile) {
         // Return default profile data for professionals without profile
         return res.status(200).json({
-          usuario_id: userId,
-          especialidad: null,
-          descripcion: '',
-          experiencia_anios: 0,
-          tarifa_hora: 0,
-          zona_cobertura: '',
-          calificacion_promedio: 0,
-          esta_disponible: true,
+          perfil: {
+            usuario_id: userId,
+            especialidad: null,
+            descripcion: '',
+            experiencia_anios: 0,
+            tarifa_hora: 0,
+            zona_cobertura: '',
+            calificacion_promedio: 0,
+            esta_disponible: true
+          },
           usuario: {
             nombre: req.user.nombre,
             email: req.user.email,
@@ -90,7 +92,9 @@ router.get('/', authenticateToken, async (req, res) => {
           }
         });
       }
-      res.status(200).json(profile);
+      // Separar usuario y perfil para compatibilidad frontend
+      const { usuario, ...perfilData } = profile;
+      res.status(200).json({ perfil: perfilData, usuario });
     } else {
       // Para clientes, devolver info básica del usuario incluyendo foto de perfil
       const user = await prisma.usuarios.findUnique({

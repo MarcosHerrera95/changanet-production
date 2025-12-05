@@ -125,6 +125,42 @@ const Profile = () => {
       <h1 className="text-3xl font-bold mb-6">Mi Perfil Profesional</h1>
 
       <div className="max-w-2xl mx-auto">
+        {/* Información profesional visual */}
+        <div className="mb-8 p-6 bg-gray-50 border border-gray-200 rounded-2xl">
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Información Profesional</h2>
+          <div className="mb-2">
+            <span className="font-semibold text-gray-700">Especialidad principal:</span>
+            <span className="ml-2 text-blue-700">{profile.especialidad || '-'}</span>
+          </div>
+          {/* Si tienes especialidades múltiples, muéstralas aquí */}
+          {profile.especialidades && (() => {
+            let especialidadesArr = [];
+            if (Array.isArray(profile.especialidades)) {
+              especialidadesArr = profile.especialidades;
+            } else if (typeof profile.especialidades === 'string' && profile.especialidades.length > 0) {
+              try {
+                const parsed = JSON.parse(profile.especialidades);
+                if (Array.isArray(parsed)) especialidadesArr = parsed;
+              } catch {}
+            }
+            return especialidadesArr.length > 0 ? (
+              <div className="mb-2">
+                <span className="font-semibold text-gray-700">Especialidades:</span>
+                <span className="ml-2 text-blue-700">{especialidadesArr.join(', ')}</span>
+              </div>
+            ) : null;
+          })()}
+          <div className="mb-2">
+            <span className="font-semibold text-gray-700">Zona de cobertura:</span>
+            <span className="ml-2 text-blue-700">{profile.zona_cobertura || '-'}</span>
+          </div>
+          {(profile.latitud && profile.longitud) && (
+            <div className="mb-2">
+              <span className="font-semibold text-gray-700">Coordenadas GPS:</span>
+              <span className="ml-2 text-blue-700">{profile.latitud}, {profile.longitud}</span>
+            </div>
+          )}
+        </div>
         <div className="bg-white rounded-2xl shadow-lg p-8">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl mb-6">
