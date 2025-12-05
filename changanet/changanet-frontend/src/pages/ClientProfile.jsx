@@ -95,6 +95,7 @@ const ClientProfile = () => {
   const handleSubmit = async (e) => {
     try {
       let response;
+      let data = null;
 
       if (selectedFile) {
         // If there's a file to upload, use FormData
@@ -136,19 +137,32 @@ const ClientProfile = () => {
 
       // Manejo robusto de respuesta no JSON
       const contentType = response.headers.get('content-type');
-      if (response.ok && contentType && contentType.includes('application/json')) {
-        const data = await response.json();
-        setSuccess('Perfil actualizado exitosamente.');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      }
+
+      if (response.ok && data) {
+        if (data.usuario) {
+          setProfile({
+            nombre: data.usuario.nombre || '',
+            email: data.usuario.email || '',
+            telefono: data.usuario.telefono || '',
+            direccion: data.usuario.direccion || '',
+            preferencias_servicio: data.usuario.preferencias_servicio || ''
+          });
+        }
+        setSuccess('Perfil cliente actualizado con éxito.');
         setSelectedFile(null);
-      } else if (contentType && contentType.includes('application/json')) {
-        const data = await response.json();
-        setError(data.error || 'Error al actualizar el perfil.');
+        setTimeout(() => setSuccess(''), 3000);
+      } else if (data) {
+        setError(data.error || data.message || `Error al actualizar el perfil. Código: ${response.status}`);
+        console.error('Error backend:', data);
       } else {
-        // Si la respuesta no es JSON, mostrar error claro
         setError('Error inesperado del servidor. La respuesta no es JSON. Verifica la conexión con el backend.');
       }
     } catch (err) {
-      setError('Error de conexión. Inténtalo de nuevo.');
+      console.error('Error updating profile:', err);
+      setError(err.message || 'Error de conexión. Inténtalo de nuevo.');
     } finally {
       setSaving(false);
     }
