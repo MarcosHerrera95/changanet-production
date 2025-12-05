@@ -128,7 +128,7 @@ const ProfileForm = ({ user, profile, onSubmit, userType }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} aria-label="Formulario de perfil" role="form">
       {/* Photo Upload Section */}
       <div className="text-center mb-8">
         <div className="relative inline-block">
@@ -152,7 +152,8 @@ const ProfileForm = ({ user, profile, onSubmit, userType }) => {
         <button
           type="button"
           onClick={handleUploadPhoto}
-          className="mt-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 hover:shadow-md hover:scale-105 transition-all duration-300"
+          className="mt-4 bg-[var(--primary)] text-white px-6 py-2 rounded-lg hover:bg-[var(--primary-hover)] hover:shadow-md hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] transition-all duration-300"
+          aria-label={preview ? 'Cambiar foto de perfil' : 'Subir foto de perfil'}
         >
           {preview ? 'Cambiar Foto' : 'Subir Foto'}
         </button>
@@ -168,8 +169,9 @@ const ProfileForm = ({ user, profile, onSubmit, userType }) => {
               name="nombre"
               value={formData.nombre}
               onChange={handleChange}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-transparent transition-all duration-300"
               required
+              aria-label="Nombre"
             />
           </div>
 
@@ -180,8 +182,9 @@ const ProfileForm = ({ user, profile, onSubmit, userType }) => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-transparent transition-all duration-300"
               required
+              aria-label="Email"
             />
           </div>
         </div>
@@ -193,7 +196,8 @@ const ProfileForm = ({ user, profile, onSubmit, userType }) => {
             name="telefono"
             value={formData.telefono}
             onChange={handleChange}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-transparent transition-all duration-300"
+            aria-label="Teléfono"
           />
         </div>
 
@@ -208,9 +212,10 @@ const ProfileForm = ({ user, profile, onSubmit, userType }) => {
                   name="especialidad"
                   value={formData.especialidad}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-transparent transition-all duration-300"
                   placeholder="Ej: Plomero, Electricista"
                   required
+                  aria-label="Especialidad"
                 />
               </div>
 
@@ -221,9 +226,10 @@ const ProfileForm = ({ user, profile, onSubmit, userType }) => {
                   name="anos_experiencia"
                   value={formData.anos_experiencia}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-transparent transition-all duration-300"
                   min="0"
                   required
+                  aria-label="Años de experiencia"
                 />
               </div>
             </div>
@@ -236,9 +242,10 @@ const ProfileForm = ({ user, profile, onSubmit, userType }) => {
                   name="zona_cobertura"
                   value={formData.zona_cobertura}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-transparent transition-all duration-300"
                   placeholder="Ej: Buenos Aires, Palermo"
                   required
+                  aria-label="Zona de cobertura"
                 />
               </div>
 
@@ -249,10 +256,11 @@ const ProfileForm = ({ user, profile, onSubmit, userType }) => {
                   name="tarifa_hora"
                   value={formData.tarifa_hora}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-transparent transition-all duration-300"
                   min="0"
                   step="0.01"
                   required
+                  aria-label="Tarifa por hora"
                 />
               </div>
             </div>
@@ -264,9 +272,10 @@ const ProfileForm = ({ user, profile, onSubmit, userType }) => {
                 value={formData.descripcion}
                 onChange={handleChange}
                 rows="4"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-transparent transition-all duration-300"
                 placeholder="Describe tus servicios y experiencia profesional..."
                 required
+                aria-label="Descripción"
               />
             </div>
           </>
@@ -279,8 +288,9 @@ const ProfileForm = ({ user, profile, onSubmit, userType }) => {
                 name="direccion"
                 value={formData.direccion}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-transparent transition-all duration-300"
                 placeholder="Ej: Av. Corrientes 1234, Buenos Aires"
+                aria-label="Dirección"
               />
             </div>
 
@@ -291,8 +301,9 @@ const ProfileForm = ({ user, profile, onSubmit, userType }) => {
                 value={formData.preferencias_servicio}
                 onChange={handleChange}
                 rows="4"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:border-transparent transition-all duration-300"
                 placeholder="Ej: Prefiero profesionales verificados, horarios flexibles..."
+                aria-label="Preferencias de servicio"
               />
             </div>
           </>
@@ -301,7 +312,8 @@ const ProfileForm = ({ user, profile, onSubmit, userType }) => {
         <button
           type="submit"
           disabled={saving}
-          className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-4 rounded-2xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+          className="w-full bg-[var(--primary)] text-white py-4 rounded-2xl hover:bg-[var(--primary-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+          aria-label="Guardar cambios de perfil"
         >
           {saving ? (
             <>

@@ -185,7 +185,7 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8" aria-label="Formulario de perfil profesional" role="form">
       {/* REQ-06: Subida de fotos */}
       <div className="bg-gray-50 p-6 rounded-lg">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Fotos del Perfil</h3>
@@ -221,15 +221,16 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
           type="number"
           value={formData.anos_experiencia}
           onChange={(e) => handleChange('anos_experiencia', e.target.value)}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.anos_experiencia ? 'border-red-500' : 'border-gray-300'
+          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+            errors.anos_experiencia ? 'border-[var(--error)]' : 'border-gray-300'
           }`}
           min="0"
           max="50"
           required
+          aria-label="Años de experiencia"
         />
         {errors.anos_experiencia && (
-          <p className="mt-1 text-sm text-red-600">{errors.anos_experiencia}</p>
+          <p className="mt-1 text-sm text-[var(--error)]" role="alert">{errors.anos_experiencia}</p>
         )}
       </div>
 
@@ -265,14 +266,15 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
           value={formData.descripcion}
           onChange={(e) => handleChange('descripcion', e.target.value)}
           rows={4}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.descripcion ? 'border-red-500' : 'border-gray-300'
+          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+            errors.descripcion ? 'border-[var(--error)]' : 'border-gray-300'
           }`}
           placeholder="Describe tus servicios, experiencia y especialidades..."
           required
+          aria-label="Descripción de servicios"
         />
         {errors.descripcion && (
-          <p className="mt-1 text-sm text-red-600">{errors.descripcion}</p>
+          <p className="mt-1 text-sm text-[var(--error)]" role="alert">{errors.descripcion}</p>
         )}
       </div>
 
@@ -283,7 +285,8 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
             type="checkbox"
             checked={formData.esta_disponible}
             onChange={(e) => handleChange('esta_disponible', e.target.checked)}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="rounded border-gray-300 text-[var(--primary)] focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+            aria-label="Disponible para nuevos trabajos"
           />
           <span className="text-sm font-medium text-gray-700">
             Estoy disponible para nuevos trabajos
@@ -296,7 +299,8 @@ const ProfessionalProfileForm = ({ onSuccess, onError, initialData = {} }) => {
         <button
           type="submit"
           disabled={loading}
-          className="bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          className="bg-[var(--primary)] text-white px-8 py-3 rounded-md hover:bg-[var(--primary-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          aria-label="Guardar perfil profesional"
         >
           {loading && (
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>

@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import socketService from '../services/socketService';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useNotificationContext } from '../context/NotificationContext';
@@ -27,6 +28,19 @@ const ClientQuotes = () => {
   useEffect(() => {
     if (user && (user.role === 'cliente' || user.rol === 'cliente')) {
       loadQuoteRequests();
+      // Conectar socket y escuchar eventos de ofertas
+      socketService.connect();
+      const refreshHandler = () => {
+        loadQuoteRequests();
+      };
+      socketService.addMessageListener('offerCreated', refreshHandler);
+      socketService.addMessageListener('offerUpdated', refreshHandler);
+      socketService.addMessageListener('offerStatusChanged', refreshHandler);
+      return () => {
+        socketService.removeMessageListener('offerCreated', refreshHandler);
+        socketService.removeMessageListener('offerUpdated', refreshHandler);
+        socketService.removeMessageListener('offerStatusChanged', refreshHandler);
+      };
     } else {
       navigate('/');
     }
@@ -134,7 +148,7 @@ const ClientQuotes = () => {
    * @returns {Array} Array de ofertas pendientes
    */
   const getOffersForComparison = () => {
-    return quoteRequests.flatMap(request => 
+    return quoteRequests.flatMap(request =>
       (request.ofertas || [])
         .filter(offer => offer.estado === 'PENDIENTE')
         .map(offer => ({
@@ -143,7 +157,9 @@ const ClientQuotes = () => {
             id: request.id,
             descripcion: request.descripcion,
             zona_cobertura: request.zona_cobertura
-          }
+          },
+          reputacion: offer.profesional?.reputacion ?? null,
+          experiencia: offer.profesional?.experiencia ?? null
         }))
     );
   };
@@ -218,14 +234,14 @@ const ClientQuotes = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
+          <div className="mb-6 bg-[var(--error-bg)] border border-[var(--error-border)] text-[var(--error)] p-4 rounded-lg" role="alert" aria-live="assertive">
             {error}
           </div>
         )}
 
         {/* Success Message */}
         {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg">
+          <div className="mb-6 bg-[var(--success-bg)] border border-[var(--success-border)] text-[var(--success)] p-4 rounded-lg" role="status" aria-live="polite">
             {success}
           </div>
         )}
@@ -359,6 +375,14 @@ const ClientQuotes = () => {
                                     {getOfferStatusText(offer.estado)}
                                   </span>
                                 </div>
+                                <div>
+                                  <p className="text-gray-500">Reputación</p>
+                                  <p className="font-medium">{offer.profesional?.reputacion ?? 'N/A'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-500">Experiencia</p>
+                                  <p className="font-medium">{offer.profesional?.experiencia ?? 'N/A'} años</p>
+                                </div>
                               </div>
                             </div>
 
@@ -370,7 +394,8 @@ const ClientQuotes = () => {
                                     e.stopPropagation();
                                     respondToOffer(offer.solicitud.id, offer.profesional.id, 'accept', offer.precio, offer.comentario);
                                   }}
-                                  className="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                  className="flex-1 bg-[var(--success)] text-white px-3 py-2 rounded-lg hover:bg-[var(--success-light)] transition-colors text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                                  aria-label="Aceptar oferta"
                                 >
                                   ✅ Aceptar
                                 </button>
@@ -379,7 +404,8 @@ const ClientQuotes = () => {
                                     e.stopPropagation();
                                     navigate(`/chat?user=${offer.profesional.id}`);
                                   }}
-                                  className="flex-1 bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                                  className="flex-1 bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                                  aria-label="Iniciar chat con profesional"
                                 >
                                   💬 Chat
                                 </button>
@@ -402,6 +428,8 @@ const ClientQuotes = () => {
                                 <tr>
                                   <th className="text-left py-2 text-purple-800">Profesional</th>
                                   <th className="text-left py-2 text-purple-800">Precio</th>
+                                  <th className="text-left py-2 text-purple-800">Reputación</th>
+                                  <th className="text-left py-2 text-purple-800">Experiencia</th>
                                   <th className="text-left py-2 text-purple-800">Comentario</th>
                                   <th className="text-left py-2 text-purple-800">Fecha</th>
                                   <th className="text-left py-2 text-purple-800">Acciones</th>
@@ -423,6 +451,8 @@ const ClientQuotes = () => {
                                     <td className="py-2 font-bold text-green-600">
                                       ${offer.precio || 'A convenir'}
                                     </td>
+                                    <td className="py-2 text-center">{offer.reputacion ?? 'N/A'}</td>
+                                    <td className="py-2 text-center">{offer.experiencia ?? 'N/A'} años</td>
                                     <td className="py-2 text-sm max-w-xs truncate">
                                       {offer.comentario || 'Sin comentario'}
                                     </td>
@@ -450,6 +480,26 @@ const ClientQuotes = () => {
                                     </td>
                                   </tr>
                                 ))}
+                                                    {/* Estadísticas de ofertas seleccionadas */}
+                                                    {selectedOffersForCompare.length > 0 && (
+                                                      <div className="mt-6">
+                                                        <h4 className="text-md font-semibold text-purple-800 mb-2">Estadísticas de las ofertas seleccionadas</h4>
+                                                        {(() => {
+                                                          const precios = selectedOffersForCompare.map(o => Number(o.precio)).filter(p => !isNaN(p));
+                                                          if (precios.length === 0) return <p className="text-gray-500">No hay precios numéricos para comparar.</p>;
+                                                          const min = Math.min(...precios);
+                                                          const max = Math.max(...precios);
+                                                          const avg = (precios.reduce((a, b) => a + b, 0) / precios.length).toFixed(2);
+                                                          return (
+                                                            <ul className="text-sm text-purple-900 list-disc list-inside">
+                                                              <li><b>Mínimo:</b> ${min}</li>
+                                                              <li><b>Máximo:</b> ${max}</li>
+                                                              <li><b>Promedio:</b> ${avg}</li>
+                                                            </ul>
+                                                          );
+                                                        })()}
+                                                      </div>
+                                                    )}
                               </tbody>
                             </table>
                           </div>

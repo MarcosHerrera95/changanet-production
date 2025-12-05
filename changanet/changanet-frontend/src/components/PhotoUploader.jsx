@@ -51,8 +51,11 @@ const PhotoUploader = ({
    * Procesar archivos seleccionados
    */
   const processFiles = async (files) => {
+    let newErrors = [];
     if (photos.length + files.length > maxPhotos) {
-      setErrors([`Máximo ${maxPhotos} fotos permitidas`]);
+      newErrors = [`Máximo ${maxPhotos} fotos permitidas`];
+      setErrors(newErrors);
+      onPhotosChange && onPhotosChange(photos.map(p => p.file), newErrors);
       return;
     }
 
@@ -60,16 +63,14 @@ const PhotoUploader = ({
     setErrors([]);
 
     const validFiles = [];
-    const newErrors = [];
+    newErrors = [];
 
     for (const file of files) {
       const validation = validateImageFile(file);
-
       if (!validation.isValid) {
         newErrors.push(`${file.name}: ${validation.error}`);
         continue;
       }
-
       try {
         // Comprimir imagen si es necesario
         const compressedFile = await compressImage(file);
@@ -85,16 +86,13 @@ const PhotoUploader = ({
       }
     }
 
-    if (newErrors.length > 0) {
-      setErrors(newErrors);
-    }
-
+    setErrors(newErrors);
+    let newPhotos = photos;
     if (validFiles.length > 0) {
-      const newPhotos = [...photos, ...validFiles];
+      newPhotos = [...photos, ...validFiles];
       setPhotos(newPhotos);
-      onPhotosChange && onPhotosChange(newPhotos.map(p => p.file));
     }
-
+    onPhotosChange && onPhotosChange(newPhotos.map(p => p.file), newErrors);
     setUploading(false);
   };
 
@@ -104,8 +102,8 @@ const PhotoUploader = ({
   const removePhoto = (index) => {
     const newPhotos = photos.filter((_, i) => i !== index);
     setPhotos(newPhotos);
-    onPhotosChange && onPhotosChange(newPhotos.map(p => p.file));
-
+    setErrors([]);
+    onPhotosChange && onPhotosChange(newPhotos.map(p => p.file), []);
     // Limpiar URLs de preview para liberar memoria
     URL.revokeObjectURL(photos[index].preview);
   };

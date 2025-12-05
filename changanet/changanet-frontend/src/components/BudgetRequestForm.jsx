@@ -11,14 +11,17 @@ import PhotoUploader from './PhotoUploader';
 const BudgetRequestForm = ({ onSuccess, onCancel }) => {
   const navigate = useNavigate();
 
+
   const [formData, setFormData] = useState({
     descripcion: '',
     zona_cobertura: '',
     especialidad: '',
-    presupuesto_estimado: ''
+    presupuesto_estimado: '',
+    urgencia: '' // Nuevo campo urgencia
   });
 
   const [photos, setPhotos] = useState([]);
+  const [photoErrors, setPhotoErrors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -58,8 +61,9 @@ const BudgetRequestForm = ({ onSuccess, onCancel }) => {
   /**
    * Manejar cambios en las fotos
    */
-  const handlePhotosChange = (newPhotos) => {
+  const handlePhotosChange = (newPhotos, errors = []) => {
     setPhotos(newPhotos);
+    setPhotoErrors(errors);
   };
 
   /**
@@ -70,22 +74,30 @@ const BudgetRequestForm = ({ onSuccess, onCancel }) => {
       setError('La descripción del trabajo es obligatoria');
       return false;
     }
-
     if (formData.descripcion.trim().length < 10) {
       setError('La descripción debe tener al menos 10 caracteres');
       return false;
     }
-
     if (!formData.zona_cobertura.trim()) {
       setError('La zona de cobertura es obligatoria');
       return false;
     }
-
     if (!formData.especialidad) {
       setError('Debes seleccionar una especialidad');
       return false;
     }
-
+    if (!formData.urgencia) {
+      setError('Debes indicar el nivel de urgencia');
+      return false;
+    }
+    if (photos.length > 5) {
+      setError('Solo puedes subir hasta 5 fotos');
+      return false;
+    }
+    if (photoErrors.length > 0) {
+      setError('Corrige los errores en las fotos antes de enviar.');
+      return false;
+    }
     return true;
   };
 
@@ -109,22 +121,20 @@ const BudgetRequestForm = ({ onSuccess, onCancel }) => {
         zona_cobertura: formData.zona_cobertura.trim(),
         especialidad: formData.especialidad,
         presupuesto_estimado: formData.presupuesto_estimado || null,
+        urgencia: formData.urgencia,
         fotos: photos
       };
 
       const result = await createBudgetRequest(requestData);
 
       setSuccess(true);
-
-      // Mostrar mensaje de éxito
-      alert(`¡Solicitud de presupuesto creada exitosamente!\n\nSe ha enviado a ${result.profesionales_solicitados?.length || 0} profesionales calificados en ${formData.zona_cobertura}.\n\nRecibirás notificaciones cuando respondan.`);
-
-      // Redirigir o llamar callback
-      if (onSuccess) {
-        onSuccess(result);
-      } else {
-        navigate('/mi-cuenta/presupuestos');
-      }
+      setTimeout(() => {
+        if (onSuccess) {
+          onSuccess(result);
+        } else {
+          navigate('/mi-cuenta/presupuestos');
+        }
+      }, 1800);
 
     } catch (err) {
       console.error('Error creating budget request:', err);
@@ -147,7 +157,7 @@ const BudgetRequestForm = ({ onSuccess, onCancel }) => {
 
   if (success) {
     return (
-      <div className="max-w-2xl mx-auto p-6 bg-green-50 border border-green-200 rounded-lg">
+      <div className="max-w-2xl mx-auto p-6 bg-green-50 border border-green-200 rounded-lg animate-fade-in">
         <div className="text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,8 +168,8 @@ const BudgetRequestForm = ({ onSuccess, onCancel }) => {
             ¡Solicitud enviada exitosamente!
           </h3>
           <p className="text-green-700">
-            Tu solicitud de presupuesto ha sido creada y enviada a profesionales calificados.
-            Recibirás notificaciones cuando respondan.
+            Tu solicitud de presupuesto ha sido creada y enviada a profesionales calificados.<br/>
+            Serás redirigido automáticamente a la vista de estado.
           </p>
         </div>
       </div>
@@ -180,12 +190,12 @@ const BudgetRequestForm = ({ onSuccess, onCancel }) => {
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
         {/* Error message */}
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="p-4 bg-[var(--error-bg)] border border-[var(--error-border)] rounded-lg" role="alert" aria-live="assertive">
             <div className="flex items-center">
-              <svg className="w-5 h-5 text-red-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-5 h-5 text-[var(--error)] mr-3" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
-              <span className="text-red-800">{error}</span>
+              <span className="text-[var(--error)]">{error}</span>
             </div>
           </div>
         )}
@@ -282,7 +292,7 @@ const BudgetRequestForm = ({ onSuccess, onCancel }) => {
         {/* Fotos */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Fotos del trabajo (opcional)
+            Fotos del trabajo (máx. 5, 5MB c/u)
           </label>
           <PhotoUploader
             onPhotosChange={handlePhotosChange}
@@ -290,9 +300,35 @@ const BudgetRequestForm = ({ onSuccess, onCancel }) => {
             placeholder="Sube fotos del trabajo a realizar"
             className={loading ? 'opacity-50 pointer-events-none' : ''}
           />
+          {photoErrors.length > 0 && (
+            <ul className="mt-2 text-sm text-red-600 list-disc list-inside">
+              {photoErrors.map((err, idx) => <li key={idx}>{err}</li>)}
+            </ul>
+          )}
           <p className="text-sm text-gray-500 mt-2">
             Las fotos ayudan a los profesionales a entender mejor el trabajo y dar cotizaciones más precisas.
           </p>
+        </div>
+
+        {/* Urgencia */}
+        <div>
+          <label htmlFor="urgencia" className="block text-sm font-medium text-gray-700 mb-2">
+            Urgencia <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="urgencia"
+            name="urgencia"
+            value={formData.urgencia}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+            disabled={loading}
+          >
+            <option value="">Seleccionar urgencia...</option>
+            <option value="alta">Alta (lo antes posible)</option>
+            <option value="media">Media (próximos días)</option>
+            <option value="baja">Baja (sin apuro)</option>
+          </select>
         </div>
 
         {/* Botones */}
@@ -300,7 +336,8 @@ const BudgetRequestForm = ({ onSuccess, onCancel }) => {
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="flex-1 bg-[var(--primary)] text-white py-3 px-4 rounded-md hover:bg-[var(--primary-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            aria-label="Enviar solicitud de presupuesto"
           >
             {loading ? (
               <>
@@ -321,7 +358,8 @@ const BudgetRequestForm = ({ onSuccess, onCancel }) => {
             type="button"
             onClick={handleCancel}
             disabled={loading}
-            className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50"
+            className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-md hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus:ring-offset-2 disabled:opacity-50"
+            aria-label="Cancelar solicitud"
           >
             Cancelar
           </button>

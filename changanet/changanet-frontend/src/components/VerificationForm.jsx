@@ -171,7 +171,7 @@ const VerificationForm = () => {
 
       {/* Formulario - solo mostrar si no está aprobado */}
       {(!status || status.estado !== 'aprobado') && (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" aria-label="Formulario de verificación de identidad" role="form">
           <div>
             <label className="block text-sm font-medium text-[#1F2937] mb-2">
               Documento de Identidad
@@ -184,8 +184,9 @@ const VerificationForm = () => {
               type="file"
               accept=".jpg,.jpeg,.png,.pdf"
               onChange={handleFileSelect}
-              className="block w-full text-sm text-[#6B7280] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#F9FBFD] file:text-[#1F2937] hover:file:bg-[#E30613] hover:file:text-white"
+              className="block w-full text-sm text-[#6B7280] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#F9FBFD] file:text-[#1F2937] hover:file:bg-[var(--primary)] hover:file:text-white focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
               disabled={uploading}
+              aria-label="Subir documento de identidad"
             />
 
             {selectedFile && (
@@ -196,8 +197,8 @@ const VerificationForm = () => {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="bg-[var(--error-bg)] border border-[var(--error-border)] rounded-md p-3" role="alert" aria-live="assertive">
+              <p className="text-sm text-[var(--error)]">{error}</p>
             </div>
           )}
 
@@ -207,8 +208,9 @@ const VerificationForm = () => {
             className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
               !selectedFile || uploading || status?.estado === 'pendiente'
                 ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-[#E30613] hover:bg-[#E30613] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E30613]'
+                : 'bg-[var(--primary)] hover:bg-[var(--primary-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]'
             }`}
+            aria-label="Solicitar verificación de identidad"
           >
             {uploading ? (
               <>

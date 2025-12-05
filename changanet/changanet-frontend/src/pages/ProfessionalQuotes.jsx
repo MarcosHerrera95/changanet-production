@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import socketService from '../services/socketService';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import BackButton from '../components/BackButton';
@@ -18,9 +19,10 @@ const ProfessionalQuotes = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [quotes, setQuotes] = useState([]);
-  const [filter, setFilter] = useState('all'); // all, pending, accepted, rejected
+  const [filter, setFilter] = useState('all'); // all, pending, accepted, rejected, nearby
   const [respondingTo, setRespondingTo] = useState(null);
   const [responseData, setResponseData] = useState({ precio: '', comentario: '' });
+  const [successMsg, setSuccessMsg] = useState('');
 
   // Hook para manejar estados de API de forma consistente
   const { loading, error, execute: apiExecute } = useApiState({
@@ -33,6 +35,19 @@ const ProfessionalQuotes = () => {
   useEffect(() => {
     if (user && (user.role === 'profesional' || user.rol === 'profesional')) {
       loadQuotes();
+      // Conectar socket y escuchar eventos de ofertas
+      socketService.connect();
+      const refreshHandler = () => {
+        loadQuotes();
+      };
+      socketService.addMessageListener('offerCreated', refreshHandler);
+      socketService.addMessageListener('offerUpdated', refreshHandler);
+      socketService.addMessageListener('offerStatusChanged', refreshHandler);
+      return () => {
+        socketService.removeMessageListener('offerCreated', refreshHandler);
+        socketService.removeMessageListener('offerUpdated', refreshHandler);
+        socketService.removeMessageListener('offerStatusChanged', refreshHandler);
+      };
     } else {
       navigate('/');
     }
@@ -60,6 +75,8 @@ const ProfessionalQuotes = () => {
       await loadQuotes();
       setRespondingTo(null);
       setResponseData({ precio: '', comentario: '' });
+      setSuccessMsg(action === 'accept' ? '¡Oferta enviada exitosamente!' : 'Oferta rechazada.');
+      setTimeout(() => setSuccessMsg(''), 2500);
     } catch (err) {
       // Error ya manejado por useApiState
       console.error('Error responding to quote:', err);
@@ -68,6 +85,7 @@ const ProfessionalQuotes = () => {
 
   const filteredQuotes = quotes.filter(quote => {
     if (filter === 'all') return true;
+    if (filter === 'nearby') return quote.cercana === true;
     return quote.estado === filter;
   });
 
@@ -76,6 +94,7 @@ const ProfessionalQuotes = () => {
       case 'aceptado': return 'bg-green-100 text-green-800';
       case 'rechazado': return 'bg-red-100 text-red-800';
       case 'pendiente': return 'bg-yellow-100 text-yellow-800';
+      case 'expirada': return 'bg-gray-300 text-gray-700';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -85,6 +104,7 @@ const ProfessionalQuotes = () => {
       case 'aceptado': return 'Aceptada';
       case 'rechazado': return 'Rechazada';
       case 'pendiente': return 'Pendiente';
+      case 'expirada': return 'Expirada';
       default: return status;
     }
   };
@@ -101,6 +121,11 @@ const ProfessionalQuotes = () => {
         </div>
 
         <div className="mb-8">
+          {successMsg && (
+            <div className="mb-6 bg-[var(--success-bg)] border border-[var(--success-border)] text-[var(--success)] px-4 py-3 rounded-lg animate-fade-in" role="status" aria-live="polite">
+              {successMsg}
+            </div>
+          )}
           <h1 className="text-3xl font-bold text-gray-900">Cotizaciones Recibidas</h1>
           <p className="mt-2 text-gray-600">
             Gestiona las solicitudes de presupuesto de tus potenciales clientes.
@@ -114,7 +139,8 @@ const ProfessionalQuotes = () => {
               { key: 'all', label: 'Todas' },
               { key: 'pendiente', label: 'Pendientes' },
               { key: 'aceptado', label: 'Aceptadas' },
-              { key: 'rechazado', label: 'Rechazadas' }
+              { key: 'rechazado', label: 'Rechazadas' },
+              { key: 'nearby', label: 'Cercanas' } // Para futuro
             ].map(({ key, label }) => (
               <button
                 key={key}
@@ -133,7 +159,7 @@ const ProfessionalQuotes = () => {
 
         {/* Mensaje de error */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="mb-6 bg-[var(--error-bg)] border border-[var(--error-border)] text-[var(--error)] px-4 py-3 rounded-lg" role="alert" aria-live="assertive">
             {error}
           </div>
         )}
@@ -260,13 +286,15 @@ const ProfessionalQuotes = () => {
                       <>
                         <button
                           onClick={() => setRespondingTo(quote.id)}
-                          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                          className="bg-[var(--primary)] text-white px-4 py-2 rounded-lg hover:bg-[var(--primary-hover)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                          aria-label="Responder cotización"
                         >
                           Responder
                         </button>
                         <button
                           onClick={() => respondToQuote(quote.id, 'reject')}
-                          className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                          className="bg-[var(--error)] text-white px-4 py-2 rounded-lg hover:bg-[var(--error-bg)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                          aria-label="Rechazar cotización"
                         >
                           Rechazar
                         </button>
