@@ -4,7 +4,9 @@
  */
 
 // Default backend URL - should match your backend server port
-export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3003';
+export const API_BASE_URL = import.meta.env.PROD
+  ? 'https://changanet-production-backend.onrender.com'
+  : (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3003');
 
 // Helper function to build full API URLs
 export const buildApiUrl = (endpoint) => {
