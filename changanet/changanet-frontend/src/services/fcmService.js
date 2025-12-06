@@ -33,6 +33,12 @@ export const initializeFCM = async () => {
       return { success: false, error: 'Firebase Messaging no está disponible' };
     }
 
+    // Verificar que la VAPID key esté configurada
+    if (!import.meta.env.VITE_FCM_VAPID_KEY) {
+      console.warn('⚠️ VITE_FCM_VAPID_KEY no configurada en .env - FCM no funcionará correctamente');
+      return { success: false, error: 'VAPID key no configurada' };
+    }
+
     // Verificar si Service Worker y Notification API están disponibles
     if (!('serviceWorker' in navigator) || !('Notification' in window)) {
       console.warn('Service Worker o Notification API no soportados');

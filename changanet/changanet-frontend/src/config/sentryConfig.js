@@ -21,7 +21,9 @@ export function initializeSentry() {
     // Verificar que tenemos el DSN configurado
     const dsn = import.meta.env.VITE_SENTRY_DSN;
     if (!dsn) {
-      console.warn('⚠️ VITE_SENTRY_DSN no configurado - Sentry no se inicializará');
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ VITE_SENTRY_DSN no configurado - Sentry no se inicializará');
+      }
       return;
     }
 
