@@ -30,11 +30,19 @@ const ClientProfile = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/profile', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/profile`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('changanet_token')}` }
       });
       if (response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          // Si la respuesta no es JSON, mostrar error claro
+          setError('La respuesta del backend no es JSON. Verifica autenticación y backend.');
+          setLoading(false);
+          return;
+        }
         // For clients, backend returns { usuario: userData }
         const userData = data.usuario || data;
 
