@@ -417,9 +417,11 @@ app.use(cors({
     'http://127.0.0.1:5176',
     'http://127.0.0.1:5177',
     'http://127.0.0.1:5178',
-    'https://changanet-production-xgkf.onrender.com' // Frontend en producción
+    'https://changanet-production-xgkf.onrender.com'
   ],
-  credentials: true, // Si necesitas enviar cookies/credenciales
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
 app.use(rateLimiterMiddleware);
