@@ -30,7 +30,8 @@ const ClientProfile = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/profile`, {
+      const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || 'https://changanet-production-backend.onrender.com';
+      const response = await fetch(`${apiBaseUrl}/api/profile`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('changanet_token')}` }
       });
       if (response.ok) {
