@@ -33,16 +33,25 @@ const ChatWidget = ({ conversationId: initialConversationId }) => {
   const loadSpecificConversation = async (conversationId) => {
     try {
       const token = localStorage.getItem('changanet_token');
-      const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3003';
+      const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || 'https://changanet-production-backend.onrender.com';
 
-      const response = await fetch(`${apiBaseUrl}/api/chat/conversation/${conversationId}`, {
+      // Forzar el uso de la URL de backend proporcionada si la variable no está definida
+      const backendUrl = apiBaseUrl || 'https://changanet-production-backend.onrender.com';
+
+      const response = await fetch(`${backendUrl}/api/chat/conversation/${conversationId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
       if (response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error('La respuesta del backend no es JSON. Verifica autenticación y backend.');
+          return;
+        }
         setSelectedConversation({
           id: data.id,
           otherUser: data.usuario1_id === user.id ? data.usuario2 : data.usuario1,
