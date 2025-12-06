@@ -160,7 +160,7 @@ const useProfessionals = () => {
       urlParams.set('page', '1');
       urlParams.set('limit', '100'); // Cargar máximo permitido por el backend
 
-      const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3003';
+      const apiBaseUrl = import.meta.env.VITE_BACKEND_URL;
       const url = `${apiBaseUrl}/api/professionals?${urlParams.toString()}`;
       console.log('Fetching professionals:', url);
       console.log('API Base URL:', apiBaseUrl);

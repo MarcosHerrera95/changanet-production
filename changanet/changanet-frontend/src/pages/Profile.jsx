@@ -27,7 +27,7 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/profile', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/profile`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('changanet_token')}` }
       });
       if (response.ok) {
@@ -66,7 +66,7 @@ const Profile = () => {
         profile.url_foto_perfil = preview;
       }
 
-      const response = await fetch('/api/profile', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
